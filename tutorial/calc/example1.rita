@@ -1,0 +1,14 @@
+# rita Script file to illustrate the use of the calculator
+#
+calc
+  xmin = 1
+  xmax = 2
+  h=0.1
+  n=(xmax-xmin)/h
+  end
+print xmin
+data
+ list param
+ end
+integration field=x interval=xmin,xmax definition=exp(-x) ne=n
+exit

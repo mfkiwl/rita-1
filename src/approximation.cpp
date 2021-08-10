@@ -1,0 +1,258 @@
+/*==============================================================================
+
+                                 r  i  t  a
+
+            An environment for Modelling and Numerical Simulation
+
+  ==============================================================================
+
+    Copyright (C) 2021 Rachid Touzani
+
+    This file is part of rita.
+
+    rita is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    rita is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  ==============================================================================
+
+                      Implementation of class 'approx'
+
+  ==============================================================================*/
+
+
+#include "approximation.h"
+
+namespace RITA {
+
+approximation::approximation(rita* r, cmd* command, configure* config)
+              : _rita(r), _configure(config), _cmd(command)
+{
+}
+
+
+approximation::~approximation()
+{
+}
+
+
+int approximation::run()
+{
+   _rita->_analysis_type = APPROXIMATION;
+   string file="";
+   int nb=0, nb_tab=0;
+   int file_count=0, lagrange_count=0, bspline_count=0, fitting_count=0, bezier_count=0;
+   int nurbs_count=0, approx_count=0;
+   static const vector<string> kw {"file","lagrange","fitting","bspline","bezier","nurbs"};
+   _cmd->set(kw,_rita->_gkw);
+   int nb_args = _cmd->getNbArgs();
+   if (nb_args<1) {
+      _rita->msg("approximation>","No argument for command.");
+      return 1;
+   }
+   for (int k=0; k<nb_args; ++k) {
+
+      int n = _cmd->getArgs(nb);
+      switch (n) {
+
+         case 0:
+            file = _cmd->string_token(0);
+            nb_tab = 1;
+            file_count++;
+            break;
+
+         case 1:
+            _lagrange_degree = _cmd->int_token(0);
+            lagrange_count++, approx_count++;
+            _method = LAGRANGE;
+            break;
+
+         case 2:
+            approx_count++;
+            _method = PIECEWISE_LAGRANGE;
+            break;
+
+         case 3:
+            approx_count++;
+            _method = HERMITE;
+            break;
+
+         case 4:
+            fitting_count++, approx_count++;
+            _method = FITTING;
+            break;
+
+         case 5:
+            bspline_count++, approx_count++;
+            _method = BSPLINE;
+            break;
+
+         case 6:
+            bezier_count++, approx_count++;
+            _method = BEZIER;
+            break;
+
+         case 7:
+            nurbs_count++, approx_count++;
+            _method = NURBS;
+            break;
+
+         default:
+            _rita->msg("approximation>","Unknown argument: "+_cmd->Arg());
+            return 1;
+      }
+   }
+
+   if (nb_args>0) {
+      if (file_count==0) {
+         _rita->msg("rita>approximation>","No data file given.");
+         return 1;
+      }
+      if (approx_count>1) {
+         _rita->msg("rita>approximation>","More than one approximation method given.");
+         return 1;
+      }
+      *_rita->ofh << "approximation";
+      _tab.setFile(file);
+      *_rita->ofh << " file=" << file;
+      if (lagrange_count++)
+         *_rita->ofh << " lagrange=" << _lagrange_degree;
+   }
+   /*   else {
+      *_ofh << "approximation " << endl;
+      while (1) {
+      if (_cmd->readline("rita>approximation> ")<0)
+         continue;
+      switch (_key=_cmd->getKW(_kw_approx)) {
+
+         case 0:
+         case 1:
+            _cmd->setNbArg(0);
+            cout << "\nAvailable Commands:\n";
+            cout << "file:         File containing tabulated data to approximate\n";
+            cout << "lagrange:     \n";
+            cout << "least-square: Least Square fitting\n";
+            cout << "summary:      Summary of approximation problem attributes\n";
+            cout << "clear:        Remove problem\n";
+            cout << "end or <:     go back to higher level" << endl;
+            break;
+
+         case 2:
+            setConfigure();
+            break;
+
+         case 3:
+            if (!_cmd->get(size))
+               *_ofh << "    size " << size << endl;
+            _ret = 0;
+            break;
+
+         case 4:
+            _ret = 0;
+            break;
+
+         case 5:
+            _ret = 0;
+            break;
+
+         case 7:
+            break;
+
+         case 8:
+            _ret = 0;
+            break;
+
+         case 9:
+            break;
+
+         case 11:
+            cout << "Summary of optimization problem attributes:\n";
+            *_ofh << "      summary" << endl;
+            _ret = 0;
+            break;
+         case 13:
+         case 14:
+            _cmd->setNbArg(0);
+            if (fct_ok<size) {
+               cout << "Error: Insufficient number of functions defining system." << endl;
+               *_ofl << "In rita>optimization>end>: Insufficient number of functions defining system." << endl;
+               break;
+            }
+            if (field_ok==0) {
+               cout << "Error: No field defined for optimization problem." << endl;
+               *_ofl << "In rita>optimization>end>: No field defined for optimization problem." << endl;
+               break;
+            }
+            *_ofh << "      end" << endl;
+            _ret = 0;
+            return;
+
+         case 15:
+         case 16:
+            _ret = 100;
+            return;
+
+         case -2:
+         case -3:
+         case -4:
+            break;
+
+         default:
+            cout << "Unknown Command: " << _cmd->token() << endl;
+            cout << "Available commands: size, objective, gradient, hessian, constraint, init, field, algorithm" << endl;
+	    cout << "                    summary, clear, end, <" << endl;
+            cout << "Global commands:    help, ?, set, quit, exit" << endl;
+            *_ofl << "In rita>optimization>: Unknown Command " << _cmd->token() << endl;
+         break;
+      }
+   }
+   _ret = 0;*/
+   return 0;
+}
+
+
+int approximation::go()
+{
+   switch (_method) {
+
+      case LAGRANGE:
+            lagrange();
+         break;
+
+      case PIECEWISE_LAGRANGE:
+         break;
+
+      case HERMITE:
+         break;
+
+      case FITTING:
+         break;
+
+      case BSPLINE:
+         break;
+
+      case BEZIER:
+         break;
+
+      case NURBS:
+         break;
+   }
+   return 0;
+}
+
+
+void approximation::lagrange()
+{
+// Lagrange Basis
+   string p="";
+      
+// Lagrange polynomial
+}
+
+} /* namespace RITA */
