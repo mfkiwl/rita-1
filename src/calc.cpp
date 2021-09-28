@@ -63,7 +63,7 @@ namespace RITA {
 
 calc::calc(rita* r,
            cmd*  command)
-     : _cmd(command), _data(r->_data)
+     : _rita(r), _cmd(command), _data(r->_data)
 {
    parser = new ParserX(pckALL_NON_COMPLEX);
    parser->EnableAutoCreateVar(true);
@@ -119,6 +119,49 @@ void calc::ListConst(const ParserXBase* p)
 }
 
 
+void calc::setData(ParserXBase* p)
+{
+   var_maptype variables = p->GetVar();
+   if (!variables.size())
+      return;
+   for (const auto& v: variables) {
+      Variable &w = (Variable&)(*v.second);
+      switch (w.GetType()) {
+
+         case 'i': 
+         case 'f': 
+            {
+               _data->addParam(v.first,w.GetFloat());
+               break;
+            }
+
+         case 'm':
+            {
+               int nr=w.GetRows(), nc=w.GetCols();
+               if (nr==1 || nc==1) {
+                  _u = new OFELI::Vect<double>(nr,nc);
+                  _data->addField(v.first,std::max(nr,nc));
+                  for (int i=1; i<=std::max(nr,nc); ++i)
+                     (*_u)(i,1) = w.GetArray().At(i-1,0).GetFloat();
+                  _data->u[_data->iField] = _u;
+               }
+               else {
+                  _data->addMatrix(v.first,nr,nc);
+                  _M = _data->theMatrix[_data->iMatrix];
+                  for (int i=1; i<=nr; ++i)
+                     for (int j=1; j<=nc; ++j)
+                        (*_M)(i,j) = w.GetArray().At(i-1,j-1).GetFloat();
+               }
+               break;
+            }
+
+         default:
+            break;
+      }
+   }
+}
+
+
 int calc::getVar(string_type& s)
 {
    parser->Eval();
@@ -140,8 +183,40 @@ int calc::getVar(string_type& s)
 void calc::addVar()
 {
    string s;
-   if (getVar(s)==0)
-      _data->addParam(s,parser->Eval().GetFloat());
+   if (getVar(s)==0) {
+      switch (parser->Eval().GetType()) {
+
+         case 'i': 
+         case 'f': 
+            {
+//               _data->addParam(s,parser->Eval().GetFloat());
+               break;
+            }
+
+         case 'm': 
+            {
+/*               int nr=parser->Eval().GetRows(), nc=parser->Eval().GetCols();
+               if (nr==1 || nc==1) {
+                  _u = new OFELI::Vect<double>(nr,nc);
+                  _data->addField(s,std::max(nr,nc));
+                  for (int i=1; i<=std::max(nr,nc); ++i)
+                     (*_u)(i,1) = parser->Eval().GetArray().At(i-1,0).GetFloat();
+                  _data->u[_data->iField] = _u;
+               }
+               else {
+                  _data->addMatrix(s,nr,nc);
+                  _M = _data->theMatrix[_data->iMatrix];
+                  for (int i=1; i<=nr; ++i)
+                     for (int j=1; j<=nc; ++j)
+                        (*_M)(i,j) = parser->Eval().GetArray().At(i-1,j-1).GetFloat();
+               }*/
+               break;
+            }
+
+         default:
+            break;
+      }
+   }
 }
 
 
@@ -171,8 +246,14 @@ void calc::ListExprVar(const ParserXBase* p)
 
 int calc::CheckKeywords(const string& ln, ParserXBase* p)
 {
-   if (ln=="end" || ln=="<")
+   if (ln=="end" || ln=="<") {
+      setData(p);
       return -1;
+   }
+   else if (ln.substr(0,5)=="print") {
+      _rita->msg("calc>","Command print is not allowed in this mode","");
+      return 0;
+   }
    else if (ln=="list") {
       ListConst(p);
       ListVar(p);
@@ -185,9 +266,9 @@ int calc::CheckKeywords(const string& ln, ParserXBase* p)
 
 int calc::run()
 {
-   int verb = 1;
    for (;;) {
       try {
+         int verb = 1;
          int ret = _cmd->readline("rita>calc> ");
          string ln = _cmd->buffer();
          if (ln=="?" || ln=="help") {
@@ -196,11 +277,11 @@ int calc::run()
             cout << "list: To list all defined variables in the module\n";
             cout << "end or <: To go back to main module\n";
             cout << "exit: To exit rita" << endl;
+            continue;
          }
          if (ret==-3 || ret==-4)
             continue;
-         if (ln=="end" || ln=="<")
-            return 100;
+         *_rita->ofh << ln << endl;
          if (ln[ln.size()-1]==';') {
             verb = 0;
             ln.pop_back();
@@ -213,7 +294,7 @@ int calc::run()
             case -1: return -1;
          }
          parser->SetExpr(ln);
-         addVar();
+//         addVar();
          if (verb)
             cout << std::setprecision(12) << "= " << parser->Eval() << endl;
       }
@@ -224,7 +305,7 @@ int calc::run()
             sMarker += _T("^\n");
             cout << sMarker;
          }
-         cout << e.GetMsg() << _T(" (Errc: ") << std::dec << e.GetCode() << _T(")") << _T("\n\n");
+         _rita->msg("calc>",e.GetMsg()+" (Errc: "+to_string(e.GetCode())+")","",1);
       }
    }
    return 0;

@@ -73,8 +73,8 @@ class approximation
     int _lagrange_degree, _hermite_degree;
     OFELI::Tabulation _tab;
     void lagrange();
-    const vector<string> _kw = {"help","?","set","file","lagrange","fitting","bspline","bezier","nurbs"
-                                "end","<","quit","exit","EXIT"};
+    const vector<string> _kw {"help","?","set","file","lagrange","fitting","bspline","bezier","nurbs"
+                                "end","<","quit","exit"};
     map<ApproxType,string> rApp = {{LAGRANGE,"lagrange"},
                                    {FITTING,"fitting"},
                                    {BSPLINE,"bspline"},

@@ -31,6 +31,8 @@
 #include "../muparserx/mpParser.h"
 #include "../muparserx/mpDefines.h"
 #include "../muparserx/mpTest.h"
+#include "linear_algebra/Vect.h"
+#include "linear_algebra/Matrix.h"
 
 namespace RITA {
 
@@ -47,20 +49,24 @@ class calc {
     calc(rita* r, cmd* command);
     ~calc();
     int run();
-    static int CheckKeywords(const std::string& ln, ParserXBase* p);
+    int CheckKeywords(const std::string& ln, ParserXBase* p);
     int getVar(string_type& s);
     ParserX *parser;
 
  private:
  
+    rita *_rita;
     cmd *_cmd;
     data *_data;
     var_maptype _vmap;
+    OFELI::Vect<double> *_u;
+    OFELI::Matrix<double> *_M;
 
     static Value Help();
     static void ListVar(const ParserXBase* p);
     static void ListConst(const ParserXBase* p);
     static void ListExprVar(const ParserXBase* p);
+    void setData(ParserXBase* p);
 
 // Operator callback functions
 /*   static value_type Mega(value_type a_fVal) { return a_fVal * 1e6; }

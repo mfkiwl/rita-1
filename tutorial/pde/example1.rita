@@ -29,7 +29,7 @@ pde laplace
 # We enter module 'solve'
 solve
   run
-  print 
+  display
 
 # To test accuracy, set analytical solution and compute error in L2 and max norms
   analytic definition=sin(pi*x)

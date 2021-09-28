@@ -27,7 +27,7 @@ sinclude([VERSION])
 AC_SUBST(VERSION)
 AC_SUBST(RELEASE)
 
-AC_INIT([rita],[1.0.1])
+AC_INIT([rita],[1.0.2])
 AC_CONFIG_SRCDIR([src/rita.cpp])
 AM_INIT_AUTOMAKE([subdir-objects])
 
@@ -198,14 +198,8 @@ AC_CONFIG_FILES([Makefile
                  tutorial/calc/Makefile
                  doc/Makefile
                  doc/css/Makefile
-                 doc/fonts/Makefile
-                 doc/fonts/bootstrap/Makefile
-                 doc/fonts/icomoon/Makefile
                  doc/images/Makefile
                  doc/js/Makefile
-                 doc/sass/Makefile
-                 doc/sass/bootstrap/Makefile
-                 doc/sass/bootstrap/mixins/Makefile
                  test_rita.sh
 ])
 AC_OUTPUT

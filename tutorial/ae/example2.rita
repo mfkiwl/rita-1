@@ -9,5 +9,5 @@ data
 algebraic function=f init=1. nls=newton
 solve
   run
-  print
+  display
 exit

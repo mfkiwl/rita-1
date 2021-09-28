@@ -1,11 +1,9 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = css fonts images js sass
+SUBDIRS = css images js
 
 docdir = $(datadir)/rita/doc
 
-doc_DATA = index.html\
-           prepros-6.config
+doc_DATA = index.html
 
-dist_doc_DATA = index.html\
-                prepros-6.config
+dist_doc_DATA = index.html

@@ -142,13 +142,13 @@ int rita::runAE()
             return 1;
          }
          for (int k=0; k<size; ++k) {
-            ind = _data->checkFct(name[k]);
-            if (ind==-1) {
+            int n = _data->FctName[name[k]];
+            if (n==0) {
                msg("algebraic>","Non defined function "+name[k]);
                return 1;
             }
-            if (_ae->theFct[k].set(name[k],_data->theFct[ind]->expr,_data->theFct[ind]->var,1)) {
-               msg("algebraic>","Error in function evaluation: "+_ae->theFct[k].getErrorMessage());
+            if (_ae->theFct[k].set(name[k],_data->theFct[n]->expr,_data->theFct[n]->var,1)) {
+               msg("algebraic>","Error in function evaluation: "+_ae->theFct[n].getErrorMessage());
                return 1;
             }
             *ofh << " function=" << name[k];
@@ -157,16 +157,16 @@ int rita::runAE()
       else {
          _ae->isFct = false;
          *ofh << " var=" << var_name;
-         var.resize(size);
-         var[0] = var_name;
-         if (size>1) {
+         var.clear();
+         if (size==1)
+            var.push_back(var_name);
+         else {
             for (int i=0; i<size; ++i)
-               var[i] = var_name + to_string(i+1);
+               var.push_back(var_name+to_string(i+1));
          }
          for (int i=0; i<size; ++i) {
-            name[i] = "ff-" + to_string(++_data->iFct);
-            _data->addFunction(name[i],def[i],var);
-            _ae->theFct[i].set(name[i],def[i],var,1);
+            _data->addFunction(def[i],var);
+            _ae->theFct[i].set(_data->fct_name[_data->iFct],def[i],var,1);
          }
          _ae->ind_fct = ind;
          for (int j=0; j<size; ++j)
@@ -179,7 +179,7 @@ int rita::runAE()
       _data->addField(var_name,size);
       _data->FieldEquation[_data->iField] = _data->iEq;
       _ae->field = _data->iField;
-      _data->FieldType.push_back(ALGEBRAIC_EQ);
+      _data->FieldType.push_back(data::eqType::AE);
       for (const auto& v: init) {
          *ofh << " init=" << v;
          _ae->y.push_back(v);
@@ -187,8 +187,7 @@ int rita::runAE()
       _ae->nls = NLs[nls];
       _ae->isFct = false;
       *ofh << " nls=" << nls << endl;
-      _data->addAE("ae_"+to_string(_data->iAE),_ae);
-
+      _data->addAE(_ae);
    }
 
    else {
@@ -377,32 +376,26 @@ int rita::runAE()
             case   8:
                cout << "Summary of algebraic system:\n";
                *ofh << "      summary" << endl;
-               for (int e=0; e<_data->nb_eq; ++e) {
-                  if (_data->eq_type[e]==ALGEBRAIC_EQ) {
-                     odae *ae = _data->theAE[e];
-                     cout << "Equation Label: " << e << endl;
-                     if (size>1)
-                        cout << "Size:           " << size << endl;
-                     if (ae->isFct) {
-                        if (size==1)
-                           cout << "Equation defined by function: " << ae->theFct[0].name << endl;
-                        else {
-                           for (int i=0; i<size; ++i)
-                              cout << "Equation: " << i+1 << ", defined by function: " << _ae->theFct[i].name << endl;
-                        }
-                     }
-                     else {
-                        if (size==1) {
-                           cout << "Equation defined by: " << ae->theFct[0].expr << endl;
-                           cout << "Variable is          " << ae->theFct[0].var[0] << endl;
-                        }
-                        else {
-                           for (int i=0; i<size; ++i)
-                              cout << "Equation: " << i+1 << ", defined by: " << ae->theFct[i].expr << endl;
-                           for (int i=0; i<size; ++i)
-                              cout << "Variable " << i+1 << " is " << ae->theFct[0].var[i] << endl;
-                        }
-                     }
+               if (size>1)
+                  cout << "Size:           " << size << endl;
+               if (_ae->isFct) {
+                  if (size==1)
+                     cout << "Equation defined by function: " << _ae->theFct[0].name << endl;
+                  else {
+                     for (int i=0; i<size; ++i)
+                        cout << "Equation: " << i+1 << ", defined by function: " << _ae->theFct[i].name << endl;
+                  }
+               }
+               else {
+                  if (size==1) {
+                     cout << "Equation defined by: " << _ae->theFct[0].expr << endl;
+                     cout << "Variable is          " << _ae->theFct[0].var[0] << endl;
+                  }
+                  else {
+                     for (int i=0; i<size; ++i)
+                        cout << "Equation: " << i+1 << ", defined by: " << _ae->theFct[i].expr << endl;
+                     for (int i=0; i<size; ++i)
+                        cout << "Variable " << i+1 << " is " << _ae->theFct[0].var[i] << endl;
                   }
                }
                _ret = 0;
@@ -427,13 +420,13 @@ int rita::runAE()
                }
                if (!_cmd->get(n))
                   *ofh << "  remove " << n << endl;
-               if (n<=0 || n>_data->nb_eq) {
+               if (n<=0 || n>_data->getNbEq()) {
                   msg("algebraic>remove>","Illegal equation label: "+to_string(n));
                   break;
                }
-               for (int e=0; e<_data->nb_eq; ++e) {
+               for (int e=0; e<_data->getNbEq(); ++e) {
                   if (e==n-1) {
-                     if (_data->eq_type[e]==ALGEBRAIC_EQ) {
+                     if (_data->eq_type[e]==data::eqType::AE) {
                         _data->theAE[e] = nullptr;
                         _data->iField--;
                      }
@@ -513,7 +506,7 @@ int rita::runAE()
                }
                _data->addField(var_name,size);
                _ae->field = _data->iField;
-               _data->FieldType.push_back(ALGEBRAIC_EQ);
+               _data->FieldType.push_back(data::eqType::AE);
                _ae->isSet = true;
                _ae->log = false;
                _ae->nls = NLs[nls];
@@ -521,7 +514,7 @@ int rita::runAE()
                _ae->isFct = false;
                if (count_fct)
                   _ae->isFct = true;
-               _data->addAE("ae_"+to_string(_data->iAE),_ae);
+               _data->addAE(_ae);
                _ret = 0;
                return _ret;
 

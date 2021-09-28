@@ -290,27 +290,15 @@ int rita::run()
             break;
       }
    }
-   exit(0);
+cout<<"$3"<<endl;
    return 0;
 }
 
 
-void rita::finish(int ret)
+void rita::finish()
 {
-   if (ret>=0) {
-      if (_verb>1)
-         cout << "Terminating rita!" << endl;
-      *ofh << "exit" << endl;
-      if (ret>0 || (_cmd->isInputFile() && ret>=0))
-         exit(0);
-      if (!_cmd->isInputFile()) {
-         cout << "Are you sure (y/n) ? ";
-         string ans="y";
-         cin >> ans;
-         if (ans=="y")
-            exit(0);
-      }
-   }          
+   *ofh << "exit" << endl;
+   exit(0);
 }
 
 
@@ -348,7 +336,7 @@ void rita::Load()
       if (_opt)
          _ret = 1;
       else
-         finish(1);
+         finish();
       return;
    }
    _script_file = "";
@@ -400,6 +388,10 @@ void rita::setParam()
       _calc->parser->SetExpr(ln);
       if (verb)
          cout << std::setprecision(12) << " = " << _calc->parser->Eval() << endl;
+   }
+   if (_calc->parser->Eval().GetType()!='i' && _calc->parser->Eval().GetType()!='f') {
+      msg("param>","This type of data is not allowed for command param.","");
+      return;
    }
    string s;
    if (_calc->getVar(s)==0)

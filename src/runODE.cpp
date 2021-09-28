@@ -155,13 +155,13 @@ int rita::runODE()
             return 1;
          }
          for (int k=0; k<size; ++k) {
-            ind = _data->checkFct(name[k]);
-            if (ind==-1) {
+            int n = _data->FctName[name[k]];
+            if (n==0) {
                msg("ode>","Non defined function "+name[k]);
                return 1;
             }
-            if (ode->theFct[k].set(name[k],_data->theFct[ind]->expr,_data->theFct[ind]->var,1)) {
-               msg("ode>","Error in function evaluation: "+ode->theFct[k].getErrorMessage());
+            if (ode->theFct[k].set(name[k],_data->theFct[n]->expr,_data->theFct[n]->var,1)) {
+               msg("ode>","Error in function evaluation: "+ode->theFct[n].getErrorMessage());
                return 1;
             }
             *ofh << " function=" << name[k];
@@ -195,7 +195,7 @@ int rita::runODE()
       ode->field = _data->iField;
       ode->fn = var_name;
       ode->log = false;
-      _data->FieldType.push_back(ODE_EQ);
+      _data->FieldType.push_back(data::eqType::ODE);
       for (const auto& v: init) {
          *ofh << " init=" << v;
          ode->y.push_back(v);
@@ -203,7 +203,7 @@ int rita::runODE()
       ode->scheme = _sch[scheme];
       *ofh << " scheme=" << scheme;
       *ofh << " time-step=" << _time_step << " final-time=" << _final_time << endl;
-      _data->addODE("ode-"+to_string(_data->iODE),ode);
+      _data->addODE(ode);
    }
 
    else {
@@ -366,6 +366,28 @@ int rita::runODE()
             case   9:
                cout << "Summary of ODE attributes:\n";
                *ofh << "    summary" << endl;
+               if (size>1)
+                  cout << "Size:           " << size << endl;
+               if (ode->isFct) {
+                  if (size==1)
+                     cout << "Equation defined by function: " << _ae->theFct[0].name << endl;
+                  else {
+                     for (int i=0; i<size; ++i)
+                        cout << "Equation: " << i+1 << ", defined by function: " << ode->theFct[i].name << endl;
+                  }
+               }
+               else {
+                  if (size==1) {
+                     cout << "Equation defined by: " << ode->theFct[0].expr << endl;
+                     cout << "Variable is          " << ode->theFct[0].var[0] << endl;
+                  }
+                  else {
+                     for (int i=0; i<size; ++i)
+                        cout << "Equation: " << i+1 << ", defined by: " << ode->theFct[i].expr << endl;
+                     for (int i=0; i<size; ++i)
+                        cout << "Variable " << i+1 << " is " << ode->theFct[0].var[i] << endl;
+                  }
+               }
                _ret = 0;
                break;
 
@@ -437,14 +459,14 @@ int rita::runODE()
                }
                _data->addField(var_name,size);
                ode->field = _data->iField;
-               _data->FieldType.push_back(ODE_EQ);
+               _data->FieldType.push_back(data::eqType::ODE);
                ode->isSet = true;
                ode->log = false;
                _data->FieldEquation[_data->iField] = _data->iEq;
                ode->isFct = false;
                if (count_fct)
                   ode->isFct = true;
-               _data->addODE("ode-"+to_string(_data->iODE),ode);
+               _data->addODE(ode);
                _ret = 0;
                return _ret;
 

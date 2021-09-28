@@ -46,66 +46,60 @@ class cmd;
 class equa;
 struct odae;
 
-enum eqType {
-   ALGEBRAIC_EQ,
-   ODE_EQ,
-   PDE_EQ,
-   OPT,
-   INTEGR
-};
-
 class data
 {
 
  public:
 
-    enum dataSize {
-      GIVEN_SIZE,
-      GRID,
-      NODES,
-      ELEMENTS,
-      SIDES,
-      EDGES
-    };
+    enum class eqType { AE, ODE, PDE, OPT, INTEGR };
+    enum class DataType { PARAM, FIELD, MATRIX, GRID, MESH, TAB, FCT, AE, ODE, PDE };
+    enum class DataSize { GIVEN_SIZE, GRID, NODES, ELEMENTS, SIDES, EDGES };
+    enum class Storage { DENSE, SPARSE, SKYLINE, BAND, TRIDIAGONAL, DIAGONAL };
+    struct Dat { int i; DataType dt; };
 
     data(rita *r, cmd *command, configure *config);
     ~data();
-    void addField(const string& name);
-    void addField(const string& name, int n);
-    int addMeshField(const string& name, dataSize s, int nb_dof=1);
+    int addField(const string& name, int n=1);
+    int addMatrix(const string& name, int nr=1, int nc=1, Storage s=Storage::DENSE);
+    int addMeshField(const string& name, DataSize s, int nb_dof=1);
     int addGridField(const string& name, int nb_dof=1);
     int addParam(const string& name, double value);
-    int addAE(const string& name, odae *ae);
-    int addODE(const string& name, odae *ode);
-    int addPDE(const string& name, equa *pde);
-    int checkField(const string& name) const;
-    int checkFct(const string& name) const;
+    int addAE(odae *ae, string name="");
+    int addODE(odae *ode, string name="");
+    int addPDE(equa *pde, string name="");
+    int checkName(const string& name, const DataType& dt, int opt=0);
+    int checkField(const string& name);
+    int checkMatrix(const string& name);
+    int checkFct(const string& name);
     int checkParam(const string& name, double& value);
     int checkParam(const string& name, int& value);
-    int checkVect(const string& name) const;
-    int checkMesh(const string& name) const;
-    int checkGrid(const string& name) const;
+    int checkVect(const string& name);
+    int checkMesh(const string& name);
+    int checkGrid(const string& name);
     int run();
     void setVerbose(int verb) { _verb = verb; }
     void setSave(int s) { _sr = s; }
     int getVerbose() const { return _verb; }
     void set(cmd* command) { _cmd = command; }
     int ret() const { return _ret; }
-    int addFunction(const string &name, const string &def, const vector<string> &var);
+    int addFunction(const string &def, const vector<string> &var, string name="");
     int addMesh(OFELI::Mesh* ms, const string& name);
     int getPar(int n, const string& msg, double& v);
     int getPar(int n, const string& msg, int& v);
     void print(const string &s);
+    int getNbEq() const { return nb_ae+nb_ode+nb_pde; }
 
     int nb_fields, nb_fcts, nb_tabs, nb_meshes, nb_grids, nb_params, nb_vectors, nb_matrices;
-    int nb_eq, nb_pde, nb_ode, nb_ae, nb_opt, nb_int, nb_eigen;
+    int nb_pde, nb_ode, nb_ae, nb_opt, nb_int, nb_eigen, nb_eq;
     vector<int> nb_dof;
     vector<OFELI::Vect<double> *> u;
     vector<double *> theParam;
-    vector<string> Field, Param;
-    map<string,int> FieldName, ParamName;
+    vector<string> Field, Param, Matr, AE, ODE, PDE;
+    map<string,int> FieldName, ParamName, MatrixName, TabName, GridName, MeshName, FctName;
+    map<string,int> AEName, ODEName, PDEName;
+    map<string,Dat> dn;
     vector<eqType> FieldType;
-    vector<dataSize> FieldSizeType;
+    vector<DataSize> FieldSizeType;
     void setNodeBC(int code, string exp, double t, OFELI::Vect<double>& v);
     vector<int> FieldEquation;
     vector<OFELI::Grid *> theGrid;
@@ -117,11 +111,11 @@ class data
     vector<odae *> theAE, theODE;
     vector<equa *> thePDE;
     vector<string> grid_name, tab_name, mesh_name, fct_name, vector_name, param_name, matrix_name;
-    vector<string> ae_name, ode_name, pde_name;
     double obj, integral;
     bool ok;
-    int iFct, iMesh, iGrid, iField, iTab, iParam, iAE, iODE, iPDE, iEq;
-    vector<int> eq_type;
+    int iFct, iMesh, iGrid, iField, iMatrix, iTab, iParam, iAE, iODE, iPDE, iEq;
+    vector<eqType> eq_type;
+    vector<int> eqq;
 
  private:
 
@@ -130,9 +124,6 @@ class data
     int _nb_args, _verb, _ret, _nb_dof, _nb, _sr;
     configure *_configure;
     cmd *_cmd;
-    int _theMesh_alloc, _theTab_alloc, _theGrid_alloc, _theFct_alloc, _theVector_alloc;
-    int _theMatrix_alloc, _u_alloc, _theParam_alloc;
-
 
     OFELI::Mesh *_theMesh;
     OFELI::Tabulation *_theTab;

@@ -7,5 +7,5 @@
 optim field=x obj=x^2-x+1 init=1.
 solve
   run
-  print
+  display
 exit

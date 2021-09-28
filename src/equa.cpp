@@ -68,7 +68,7 @@ int equa::setSpD(string spd)
          _rita->msg("pde>","No defined mesh.");
          return 1;
       }
-      _theMesh = _data->theMesh[0];
+      _theMesh = _data->theMesh[_data->iMesh];
       _dim = _theMesh->getDim();
    }
    else if (Sdm==FD) {
@@ -76,7 +76,7 @@ int equa::setSpD(string spd)
          _rita->msg("pde>","No defined grid.");
          return 1;
       }
-      _theGrid = _data->theGrid[0];
+      _theGrid = _data->theGrid[_data->iGrid];
       _dim = _theGrid->getDim();
    }
    return 0;
@@ -88,7 +88,7 @@ void equa::setFields()
    nb_fields = 1;
    fd[0].fn = "u";
    fd[0].nb_dof = 1;
-   fd[0].ds = data::NODES;
+   fd[0].ds = data::DataSize::NODES;
 
    switch (ieq) {
 
@@ -158,7 +158,7 @@ void equa::setFields()
 }
 
 
-void equa::setSize(Vect<double>& v, data::dataSize s)
+void equa::setSize(Vect<double>& v, data::DataSize s)
 {
    _nb_dof = 1;
    if (_theMesh!=nullptr) {
@@ -171,7 +171,7 @@ void equa::setSize(Vect<double>& v, data::dataSize s)
       else if (_theMesh->getDOFSupport()==EDGE_DOF)
          _nb_dof = _theMesh->getNbDOF()/_theMesh->getNbEdges();
 
-      if (s==data::NODES) {
+      if (s==data::DataSize::NODES) {
          if (_theMesh->getNbNodes()==0) {
             _rita->msg("pde>","Mesh has no nodes");
             _ret = 1;
@@ -179,7 +179,7 @@ void equa::setSize(Vect<double>& v, data::dataSize s)
          }
          v.setMesh(*_theMesh,NODE_DOF,_nb_dof);
       }
-      else if (s==data::ELEMENTS) {
+      else if (s==data::DataSize::ELEMENTS) {
          if (_theMesh->getNbElements()==0) {
             _rita->msg("pde>:","Mesh has no elements");
             _ret = 1;
@@ -187,7 +187,7 @@ void equa::setSize(Vect<double>& v, data::dataSize s)
          }
          v.setMesh(*_theMesh,ELEMENT_DOF,_nb_dof);
       }
-      else if (s==data::SIDES) {
+      else if (s==data::DataSize::SIDES) {
          if (_theMesh->getNbSides()==0) {
             _rita->msg("pde>:","Mesh has no sides");
             _ret = 1;
@@ -195,7 +195,7 @@ void equa::setSize(Vect<double>& v, data::dataSize s)
          }
          v.setMesh(*_theMesh,SIDE_DOF,_nb_dof);
       }
-      else if (s==data::EDGES) {
+      else if (s==data::DataSize::EDGES) {
          if (_theMesh->getNbEdges()==0) {
             _rita->msg("pde>","Mesh has no edges");
             _ret = 1;
@@ -374,7 +374,7 @@ int equa::setBC()
       return 1;
    }
    _theMesh = _data->theMesh[_data->iMesh];
-   setSize(bc,data::NODES);
+   setSize(bc,data::DataSize::NODES);
    bc.setRegex(1);
    if (bc_data.in_file.size()) {
       OFELI::IOField ffi(bc_data.in_file,OFELI::IOField::IN);
@@ -462,7 +462,7 @@ int equa::setSF()
       return 1;
    }
    _theMesh = _data->theMesh[_data->iMesh];
-   setSize(sf,data::SIDES);
+   setSize(sf,data::DataSize::SIDES);
    sf.setRegex(1);
    if (sf_data.in_file.size()) {
       OFELI::IOField ffi(sf_data.in_file,OFELI::IOField::IN);
@@ -529,11 +529,11 @@ int equa::getBF()
 int equa::setBF()
 {
    if (bf_data.size==0) {
-      _rita->msg("pde>sf>","No defined body force");
+      _rita->msg("pde>bf>","No defined body force");
       return 1;
    }
    _theMesh = _data->theMesh[_data->iMesh];
-   setSize(bf,data::NODES);
+   setSize(bf,data::DataSize::NODES);
    _ret = 0;
    bf.setRegex(1);
    if (bf_data.in_file.size()) {

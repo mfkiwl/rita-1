@@ -204,12 +204,12 @@ int optim::run()
                var.push_back(var_name+to_string(i+1));
          }
          *_rita->ofh << " var=" << var_name;
-         theData->addFunction("",J,var);
+         theData->addFunction(J,var);
          if (theData->iField<theData->nb_fields-1)
-            theData->FieldType[theData->iField] = OPT;
+            theData->FieldType[theData->iField] = data::eqType::OPT;
          else
-            theData->FieldType.push_back(OPT);
-         J_Fct = theData->theFct[theData->nb_fcts-1];
+            theData->FieldType.push_back(data::eqType::OPT);
+         J_Fct = theData->theFct[theData->nb_fcts];
          if (count_grad) {
             if (count_grad!=size) {
                _rita->msg("optimization>","Illegal number of gradient components given.");
@@ -218,8 +218,8 @@ int optim::run()
             }
             G_ok = true;
             for (int i=0; i<size; ++i) {
-               igrad = theData->addFunction("",grad[i],var);
-               G_Fct.push_back(theData->theFct[theData->nb_fcts-1]);
+               igrad = theData->addFunction(grad[i],var);
+               G_Fct.push_back(theData->theFct[theData->nb_fcts]);
             }
             *_rita->ofh << " gradient=" << grad[0];
             for (int i=1; i<size-1; ++i)
@@ -235,7 +235,7 @@ int optim::run()
             H_ok = true;
             for (int i=0; i<size; ++i) {
                for (int j=0; j<size; ++j) {
-                  ihess = theData->addFunction("",hess[size*i+j],var);
+                  ihess = theData->addFunction(hess[size*i+j],var);
                   H_Fct.push_back(theData->theFct[theData->nb_fcts]);
                }
             }
@@ -602,9 +602,9 @@ int optim::run()
                   *_rita->ofh << "optimization\n size " << size << endl << "  lp" << endl;
                   theData->addField(var_name,size);
                   if (theData->iField<theData->nb_fields-1)
-                     theData->FieldType[theData->iField] = OPT;
+                     theData->FieldType[theData->iField] = data::eqType::OPT;
                   else
-                     theData->FieldType.push_back(OPT);
+                     theData->FieldType.push_back(data::eqType::OPT);
                   if (size==1)
                      var.push_back(var_name);
                   else {
@@ -690,12 +690,12 @@ int optim::run()
                      }
                      *_rita->ofh << "  variable " << var_name << endl;
                      *_rita->ofh << "  objective " << J << endl;
-                     theData->addFunction("",J,var);
+                     theData->addFunction(J,var);
                      if (theData->iField<theData->nb_fields-1)
-                        theData->FieldType[theData->iField] = OPT;
+                        theData->FieldType[theData->iField] = data::eqType::OPT;
                      else
-                        theData->FieldType.push_back(OPT);
-                     J_Fct = theData->theFct[theData->nb_fcts-1];
+                        theData->FieldType.push_back(data::eqType::OPT);
+                     J_Fct = theData->theFct[theData->nb_fcts];
                   }
                   if (count_grad) {
                      if (count_grad!=size) {
@@ -704,8 +704,8 @@ int optim::run()
                      }
                      G_ok = true;
                      for (int i=0; i<size; ++i) {
-                        igrad = theData->addFunction("",grad[i],var);
-                        G_Fct.push_back(theData->theFct[theData->nb_fcts-1]);
+                        igrad = theData->addFunction(grad[i],var);
+                        G_Fct.push_back(theData->theFct[theData->nb_fcts]);
                      }
                      *_rita->ofh << "  gradient  ";
                      for (int i=0; i<size; ++i)
@@ -714,13 +714,13 @@ int optim::run()
                   }
                   nb_lec = count_lec, nb_eqc = count_eqc;
                   for (int i=0; i<nb_lec; ++i) {
-                     iincons = theData->addFunction("",le_cons[i],var);
-                     inC_Fct.push_back(theData->theFct[theData->nb_fcts-1]);
+                     iincons = theData->addFunction(le_cons[i],var);
+                     inC_Fct.push_back(theData->theFct[theData->nb_fcts]);
                      *_rita->ofh << "  le-constraint  " << le_cons[i] << endl;
                   }
                   for (int i=0; i<nb_eqc; ++i) {
-                     ieqcons = theData->addFunction("",eq_cons[i],var);
-                     eqC_Fct.push_back(theData->theFct[theData->nb_fcts-1]);
+                     ieqcons = theData->addFunction(eq_cons[i],var);
+                     eqC_Fct.push_back(theData->theFct[theData->nb_fcts]);
                      *_rita->ofh << "  eq-constraint  " << eq_cons[i] << endl;
                   }
                   if (penal_ok)
@@ -734,7 +734,7 @@ int optim::run()
                      *_rita->ofh << "  hessian  ";
                      for (int i=0; i<size; ++i) {
                         for (int j=0; j<size; ++j) {
-                           ihess = theData->addFunction("",hess[size*i+j],var);
+                           ihess = theData->addFunction(hess[size*i+j],var);
                            H_Fct.push_back(theData->theFct[theData->nb_fcts]);
                            *_rita->ofh << hess[size*i+j] << " ";
                         }

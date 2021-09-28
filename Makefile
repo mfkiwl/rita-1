@@ -278,10 +278,10 @@ OFELI_LIBS = -lofeli
 PACKAGE = rita
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = rita
-PACKAGE_STRING = rita 1.0.1
+PACKAGE_STRING = rita 1.0.2
 PACKAGE_TARNAME = rita
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.0.1
+PACKAGE_VERSION = 1.0.2
 PATH_SEPARATOR = :
 RANLIB = ranlib
 RELEASE = 
@@ -290,7 +290,7 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 SYMBOLIC_CFLAGS = 
-VERSION = 1.0.1
+VERSION = 1.0.2
 abs_builddir = /Users/touzani/Documents/NUMERIC/rita/rita
 abs_srcdir = /Users/touzani/Documents/NUMERIC/rita/rita
 abs_top_builddir = /Users/touzani/Documents/NUMERIC/rita/rita
@@ -351,7 +351,8 @@ AUX_DIST = config.guess \
            ltmain.sh \
            mdate-sh \
            missing \
-           mkinstalldirs
+           mkinstalldirs \
+           install-rita.sh
 
 AUX_DIST_EXTRA = readline.m4 \
                  sys_errlist.m4 \

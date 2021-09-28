@@ -57,9 +57,9 @@ solve::solve(rita *r, cmd *command, configure *config)
 
 int solve::run()
 {
-   _nb_eq = _data->nb_eq;
-   int eq=_data->iEq;
-   static const vector<string> kw {"select","run","save","print","plot","analytic","error","post"};
+   _nb_eq = _data->getNbEq();
+   int eq=1, i=0;
+   static const vector<string> kw {"select","run","save","disp$lay","plot","analytic","error","post"};
    if ((_rita->_analysis_type==STEADY_STATE||_rita->_analysis_type==TRANSIENT) && _nb_eq==0) {
       _rita->msg("solve>","No equation defined.");
       _ret = 1;
@@ -71,37 +71,36 @@ int solve::run()
       _ret = 1;
       return _ret;
    }
-   _fformat.resize(_nb_fields);
-   _isave.resize(_nb_fields,0);
-   _save_file.resize(_nb_fields);
-   _phase_file.resize(_nb_fields);
-   int i=0;
-   for (int e=0; e<_nb_eq; ++e) {
-      if (_data->eq_type[e]==ALGEBRAIC_EQ)
-         _data->theAE[e]->analytic.resize(_data->theAE[e]->size);
-      else if (_data->eq_type[e]==ODE_EQ)
-         _data->theODE[e]->analytic.resize(_data->theODE[e]->size);
-      else if (_data->eq_type[e]==PDE_EQ) {
-         if (_data->thePDE[e]->log.fail()) {
-            if (_data->thePDE[e]->log.pde)
-               _rita->msg("solve>","No PDE defined for equation "+to_string(e+1)+". Solution procedure aborted.");
-            else if (_data->thePDE[e]->log.field)
-               _rita->msg("solve>","Field definition incorrect for equation "+to_string(e+1)+". Solution procedure aborted.");
-            else if (_data->thePDE[e]->log.spd)
-               _rita->msg("solve>","No space discretization method available for PDE "+to_string(e+1)+". Solution procedure aborted.");
-            else if (_data->thePDE[e]->log.ls)
-               _rita->msg("solve>","No defined linear solver for PDE "+to_string(e+1)+". Solution procedure aborted.");
-            else if (_data->thePDE[e]->log.nl)
-               _rita->msg("solve>","No defined nonlinear solver for PDE "+to_string(e+1)+". Solution procedure aborted.");
-            if (_verb>1)
-               cout << "Getting back to higher level ..." << endl;
-            _ret = 0;
-            return _ret;
-         }
-         else
-            _data->thePDE[e]->analytic.resize(1);
+   _fformat.resize(_nb_fields+1);
+   _isave.resize(_nb_fields+1,0);
+   _save_file.resize(_nb_fields+1);
+   _phase_file.resize(_nb_fields+1);
+   for (int e=1; e<=_data->nb_ae; ++e)
+      _data->theAE[e]->analytic.resize(_data->theAE[e]->size);
+   for (int e=1; e<=_data->nb_ode; ++e)
+      _data->theODE[e]->analytic.resize(_data->theODE[e]->size);
+
+   for (int e=1; e<=_data->nb_pde; ++e) {
+      if (_data->thePDE[e]->log.fail()) {
+         if (_data->thePDE[e]->log.pde)
+            _rita->msg("solve>","No PDE defined for equation "+to_string(e)+". Solution procedure aborted.");
+         else if (_data->thePDE[e]->log.field)
+            _rita->msg("solve>","Field definition incorrect for equation "+to_string(e)+". Solution procedure aborted.");
+         else if (_data->thePDE[e]->log.spd)
+            _rita->msg("solve>","No space discretization method available for PDE "+to_string(e)+". Solution procedure aborted.");
+         else if (_data->thePDE[e]->log.ls)
+            _rita->msg("solve>","No defined linear solver for PDE "+to_string(e)+". Solution procedure aborted.");
+         else if (_data->thePDE[e]->log.nl)
+            _rita->msg("solve>","No defined nonlinear solver for PDE "+to_string(e)+". Solution procedure aborted.");
+         if (_verb>1)
+            cout << "Getting back to higher level ..." << endl;
+         _ret = 0;
+         return _ret;
       }
+      else
+         _data->thePDE[e]->analytic.resize(1);
    }
+
    while (1) {
       int nb = _cmd->readline("rita>solve> ");
       if (nb<0)
@@ -115,7 +114,7 @@ int solve::run()
             cout << "select:   Select equation (or system of equations) to solve (Default: last defined equation)\n";
             cout << "run:      Run the model\n";
             cout << "save:     Save output, can be executed before run\n";
-            cout << "print:    Print solution and related data\n";
+            cout << "display:  Print solution and related data\n";
             cout << "plot:     Plot solution\n";
             cout << "analytic: Give analytic solution to test accuracy\n";
             cout << "error:    Compute error in various norms\n";
@@ -140,13 +139,13 @@ int solve::run()
                if (_verb)
                   cout << "Running stationary solver ..." << endl;
                *_rita->ofh << "  run" << endl;
-               _ret = run_steady(eq);
+               _ret = run_steady();
             }
             else if (_rita->_analysis_type==TRANSIENT) {
                if (_verb)
                   cout << "Running transient solver ..." << endl;
                *_rita->ofh << "  run" << endl;
-               _ret = run_transient(eq);
+               _ret = run_transient();
             }
             else if (_rita->_analysis_type==OPTIMIZATION) {
                if (_verb)
@@ -169,8 +168,8 @@ int solve::run()
             break;
 
          case   3:
-            *_rita->ofh << "  print " << endl;
-            print();
+            *_rita->ofh << "  display " << endl;
+            display();
             break;
 
          case   4:
@@ -222,16 +221,16 @@ int solve::run()
          default:
             _rita->msg("solve>","Unknown command: "+_cmd->token(),
                        "Available commands for this mode:\n"
-                       "run, save, print, plot, analytic, error, post");
+                       "run, save, display, plot, analytic, error, post");
             break;
       }
    }
 }
 
 
-int solve::run_steady(int eq)
+int solve::run_steady()
 {
-   stationary st(_rita,eq);
+   stationary st(_rita);
    st.setSave(_isave,_fformat,_save_file);
    int ret = 0;
    try {
@@ -242,25 +241,25 @@ int solve::run_steady(int eq)
 }
 
 
-int solve::run_transient(int eq)
+int solve::run_transient()
 {
-   transient *ts = new transient(_rita,eq);
+   transient *ts = new transient(_rita);
    ts->setSave(_isave,_fformat,_save_file,_phase,_phase_file);
-   if (_data->eq_type[eq]==ALGEBRAIC_EQ) {
+   for (int e=1; e<=_data->nb_ae; ++e) {
    }
-   else if (_data->eq_type[eq]==ODE_EQ) {
+   for (int e=1; e<=_data->nb_ode; ++e) {
    }
-   else if (_data->eq_type[eq]==PDE_EQ)
-      ts->setLinearSolver(_data->thePDE[eq]->ls,_data->thePDE[eq]->prec);
+   for (int e=1; e<=_data->nb_pde; ++e)
+      ts->setLinearSolver(_data->thePDE[e]->ls,_data->thePDE[e]->prec);
    int ret = ts->run();
-   if (_isave[eq] && theStep%_isave[eq]==0) {
-      if (_data->eq_type[eq]==ALGEBRAIC_EQ) {
+/*   if (_isave[1] && theStep%_isave[1]==0) {
+      if (_data->eq_type[1]==ALGEBRAIC_EQ) {
       }
-      else if (_data->eq_type[eq]==ODE_EQ) {
+      else if (_data->eq_type[1]==ODE_EQ) {
       }
-      else if (_data->eq_type[eq]==PDE_EQ)
+      else if (_data->eq_type[1]==PDE_EQ)
          ;
-   }
+   }*/
    delete ts;
    _solved = true;
    return ret;
@@ -296,7 +295,7 @@ int solve::run_optim()
             s.set(OFELI::LPSolver::GE_CONSTRAINT,*_optim->a_ge[i],_optim->b_ge[i]);
          int ret = s.run();
          _optim->obj = s.getObjective();
-	 if (ret==0)
+         if (ret==0)
             _optim->solved = true;
       }
       else {
@@ -333,16 +332,16 @@ void solve::save()
    string file="rita-1.pos", fformat="gmsh", ext="", fd="u", phase_f="";
    _phase = false;
    if (_nb_fields==1) {
-      fd = _data->Field[0];
-      eq = _data->FieldEquation[0];
-      _fformat[0] = GNUPLOT;
-      _save_file[0] = "u.dat";
-      _isave[0] = 1;
+      fd = _data->Field[1];
+      eq = _data->FieldEquation[1];
+      _fformat[1] = GNUPLOT;
+      _save_file[1] = "u.dat";
+      _isave[1] = 1;
       field_ok = 1;
-      if (_data->eq_type[0]==PDE_EQ) {
-         _fformat[0] = GMSH;
-         _save_file[0] = "u.pos";
-      }
+/*      if (_data->eq_type[0]==data::eqType::PDE) {
+         _fformat[_data->iField] = GMSH;
+         _save_file[_data->iField] = "u.pos";
+      }*/
    }
    _ret = 0;
 
@@ -398,18 +397,18 @@ void solve::save()
          return;
       }
       eq = _data->FieldEquation[k];
-      if (_data->eq_type[eq]==PDE_EQ) {
+      if (_data->eq_type[eq]==data::eqType::PDE) {
          _isave[k] = freq;
          _fformat[k] = GMSH;
          _save_file[k] = fd + ".pos";
       }
-      else if (_data->eq_type[eq]==ODE_EQ || (_data->eq_type[eq]==ALGEBRAIC_EQ)) {
+      else if (_data->eq_type[eq]==data::eqType::ODE || (_data->eq_type[eq]==data::eqType::AE)) {
          _isave[k] = freq;
          _fformat[k] = GNUPLOT;
          _save_file[k] = fd + ".dat";
       }
       eq = _data->FieldEquation[k];
-      if (_data->eq_type[eq]!=PDE_EQ && fformat != "gnuplot") {
+      if (_data->eq_type[eq]!=data::eqType::PDE && fformat != "gnuplot") {
          _rita->msg("solve>save>","Only Gnuplot format is available for this type of equation.");
          _ret = 1;
          return;
@@ -422,8 +421,8 @@ void solve::save()
          return;
       }
       _save_file[k] = file;
-      *_rita->ofh << "  save  field=" << fd << "  file=" << file << "  format=" << fformat
-            << "  frequency=" << freq;
+      *_rita->ofh << "  save field=" << fd << " file=" << file << " format=" << fformat
+            << " frequency=" << freq;
       if (_phase) {
          _phase_file[k] = phase_f;
          *_rita->ofh << "  phase=" << phase_f;
@@ -474,12 +473,12 @@ void solve::setAnalytic()
          _ret = 1;
          return;
       }
-      if (_data->eq_type[eq-1]==ALGEBRAIC_EQ)
-         _data->theAE[eq-1]->analytic[comp-1] = exp;
-      else if (_data->eq_type[eq-1]==ODE_EQ)
-         _data->theODE[eq-1]->analytic[comp-1] = exp;
-      else if (_data->eq_type[eq-1]==PDE_EQ)
-         _data->thePDE[eq-1]->analytic[comp-1] = exp;
+      if (_data->eq_type[eq]==data::eqType::AE)
+         _data->theAE[eq]->analytic[comp-1] = exp;
+      else if (_data->eq_type[eq]==data::eqType::ODE)
+         _data->theODE[eq]->analytic[comp-1] = exp;
+      else if (_data->eq_type[eq]==data::eqType::PDE)
+         _data->thePDE[eq]->analytic[comp-1] = exp;
       *_rita->ofh << "analytic equation=" << eq << " component=" << comp << " expression=" << exp << endl;
    }
    _ret = 0;
@@ -487,11 +486,11 @@ void solve::setAnalytic()
 }
 
 
-void solve::print(int f)
+void solve::display(int f)
 {
    if (f==-1)
       f = _data->iField;
-   if (_data->FieldType[f]==ALGEBRAIC_EQ) {
+   if (_data->FieldType[f]==data::eqType::AE) {
       if (_data->u[f]->size()==1)
          cout << "Solution of algebraic equation: " << (*_data->u[f])[0] << endl;
       else {
@@ -500,7 +499,7 @@ void solve::print(int f)
             cout << (*_data->u[f])[i] << endl;
       }
    }
-   else if (_data->FieldType[f]==ODE_EQ) {
+   else if (_data->FieldType[f]==data::eqType::ODE) {
       if (_data->u[f]->size()==1)
          cout << "Solution of ordinary differential equation: "
               << (*_data->u[f])[0] << endl;
@@ -510,13 +509,13 @@ void solve::print(int f)
             cout << (*_data->u[f])[i] << endl;
       }
    }
-   else if (_data->FieldType[f]==PDE_EQ) {
+   else if (_data->FieldType[f]==data::eqType::PDE) {
       cout << "Solution of partial differential equation: " << endl;
       cout << "Solution vector:\n" << *_data->u[f];
    }
-   else if (_data->FieldType[f]==OPT) {
+   else if (_data->FieldType[f]==data::eqType::OPT) {
       if (!_optim->solved) {
-         _rita->msg("solve>print>","Optimization problem ot properly solved.");
+         _rita->msg("solve>display>","Optimization problem ot properly solved.");
          _ret = 1;
          return;
       }
@@ -534,7 +533,7 @@ void solve::print(int f)
 
 int solve::plot()
 {
-   OFELI::saveField(*_data->u[0],"rita.pos",GMSH);
+   OFELI::saveField(*_data->u[1],"rita.pos",GMSH);
    string com = "gmsh rita.pos";
    int ret = system(com.c_str());
    remove("rita.pos");
@@ -556,8 +555,9 @@ void solve::get_error(int eq, int i)
    }
 
 // Case of an algebraic equation
-   if (_data->eq_type[eq-1]==ALGEBRAIC_EQ) {
-      _ae = _data->theAE[eq-1];
+   if (_data->eq_type[eq]==data::eqType::AE) {
+      int e = _data->eqq[eq];
+      _ae = _data->theAE[e];
       _var.resize(_ae->size);
       for (int i=0; i<_ae->size; ++i) {
          y.resize(_ae->size);
@@ -573,8 +573,9 @@ void solve::get_error(int eq, int i)
    }
 
 // Case of an ODE
-   else if (_data->eq_type[eq-1]==ODE_EQ) {
-       _ode = _data->theODE[eq-1];
+   else if (_data->eq_type[eq]==data::eqType::ODE) {
+      int e = _data->eqq[eq];
+       _ode = _data->theODE[e];
        y.resize(_ode->size+1);
       _var.resize(_ode->size+1);
       _var[0] = "t";
@@ -592,18 +593,19 @@ void solve::get_error(int eq, int i)
    }
 
 // Case of a PDE
-   else if (_data->eq_type[eq-1]==PDE_EQ) {
-      _pde = _data->thePDE[eq-1];
+   else if (_data->eq_type[eq]==data::eqType::PDE) {
+      int e = _data->eqq[eq];
+      _pde = _data->thePDE[e];
       int nb_dof = 0, neq = 0;
-      OFELI::Mesh *theMesh = _data->theMesh[0];
-      OFELI::Grid *theGrid = _data->theGrid[0];
+      OFELI::Mesh *theMesh = _data->theMesh[_data->iMesh];
+      OFELI::Grid *theGrid = _data->theGrid[_data->iGrid];
       if (theMesh!=nullptr) {
          neq = theMesh->getNbDOF();
          nb_dof = neq/theMesh->getNbNodes();
          for (int i=0; i<nb_dof; ++i) {
             _theFct.set(_pde->analytic[i]);
             for (int n=1; n<=int(theMesh->getNbNodes()); ++n) {
-               double u = (*_data->u[eq-1])(n,i+1);
+               double u = (*_data->u[eq])(n,i+1);
                double v = _theFct((*theMesh)[n]->getCoord());
                err2 += (u-v)*(u-v);
                errI  = std::max(fabs(u-v),errI);
@@ -620,7 +622,7 @@ void solve::get_error(int eq, int i)
    }
 
 // Case of an Optimization problem
-   else if (_data->eq_type[eq-1]==OPT)
+   else if (_data->eq_type[eq]==data::eqType::OPT)
       _rita->msg("solve>error>","Error computation is not available for optimization problems.");
 }
 

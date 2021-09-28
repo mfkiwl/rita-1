@@ -255,10 +255,10 @@ OFELI_LIBS = -lofeli
 PACKAGE = rita
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = rita
-PACKAGE_STRING = rita 1.0.1
+PACKAGE_STRING = rita 1.0.2
 PACKAGE_TARNAME = rita
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.0.1
+PACKAGE_VERSION = 1.0.2
 PATH_SEPARATOR = :
 RANLIB = ranlib
 RELEASE = 
@@ -267,7 +267,7 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 SYMBOLIC_CFLAGS = 
-VERSION = 1.0.1
+VERSION = 1.0.2
 abs_builddir = /Users/touzani/Documents/NUMERIC/rita/rita/doc
 abs_srcdir = /Users/touzani/Documents/NUMERIC/rita/rita/doc
 abs_top_builddir = /Users/touzani/Documents/NUMERIC/rita/rita
@@ -321,13 +321,9 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 MAINTAINERCLEANFILES = Makefile.in
-SUBDIRS = css fonts images js sass
-doc_DATA = index.html\
-           prepros-6.config
-
-dist_doc_DATA = index.html\
-                prepros-6.config
-
+SUBDIRS = css images js
+doc_DATA = index.html
+dist_doc_DATA = index.html
 all: all-recursive
 
 .SUFFIXES:

@@ -236,7 +236,7 @@
                                                           <li>Keyword <span class=var>parameter</span> (or simply <span class=var>param</span> 
                                                             or <span class=var>@</span>):<br>
                                                             <span class=var>parameter&ensp;&lt;expr&gt;&ensp;[;]</span><br>
-                                                            where <span class=var>expr</span> is an expression defining a parameter, <i>e.g.</i>
+                                                            <span class=var>expr</span> is an expression defining a parameter, <i>e.g.</i>
                                                             <span class=var>a=2</span>, <span class=var>b=exp(a)</span>,
                                                             <span class=var>...</span> These constants can be used as data in most commands.
                                                             The optional symbol <span class=var>;</span> prevents from outputting the result.
@@ -434,8 +434,8 @@
                                                                  <li><a name="nbdof"></a>Keyword <span class=var>nbdof</span> enables generating a finite element mesh 
                                                                      using the constructed geometry:<br>
                                                                      <span class=var>nbdof&ensp;n</span><br>
-                                                                     where <span class=var>n</span> is the number of degrees for freedom for each support of degrees of
-                                                                            freedom (<it>e.g.</it> nodes). The default value is <span class=var>1</span>.
+                                                                     <span class=var>n</span> is the number of degrees for freedom for each support of degrees of
+                                                                     freedom (<it>e.g.</it> nodes). The default value is <span class=var>1</span>.
                                                                  <li><a name="list"></a>Keyword <span class=var>list</span> outputs a list of all generated entities in mesh:<br>
                                                                  <li><a name="generate"></a>Keyword <span class=var>generate</span> enables generating a finite element mesh 
                                                                      using the constructed geometry.
@@ -443,17 +443,18 @@
                                                                      beginning of geometry description.
                                                                   <li><a name="save"></a>Keyword <span class=var>save</span> saves the generated mesh in a file:<br>
                                                                      <span class=var>save&ensp;file</span><br>
-                                                                     where <span class=var>file</span> is the name of the file in which the mesh is stored.
+                                                                     <span class=var>file</span> is the name of the file in which the mesh is stored.
                                                                  <li><a name="read-mesh"></a>Keyword <span class=var>read</span> reads an already existing mesh from a file:<br>
                                                                      <span class=var>read&ensp;file</span><br>
-                                                                     where <span class=var>file</span> is the name of the file in which the mesh is read.
+                                                                     <span class=var>file</span> is the name of the file in which the mesh is read.
                                                                  <li><a name="plot"></a>Keyword <span class=var>plot</span> plots the generated mesh. The Gmsh executable is used.
                                                               </ul>
                                                        </section>
                                                    </li>
                                                    <p></p>
                                                    <li><section class="rita-text" data-section="stationary">
-                                                       Command <span class=vvar><a name="stationary"></a>stationary</span> sets problem analysis as stationary (steady state). This is the default when the chosen equations (ode's or pde's) suggest it.
+                                                       Command <span class=vvar><a name="stationary"></a>stationary</span> sets problem analysis as stationary (steady state). 
+                                                       This is the default when the chosen equations (algrbraic or pde's) imply it.
                                                        </section></li>
                                                    <p></p>
                                                    <li><section class="rita-text" data-section="transient">
@@ -515,31 +516,31 @@
                                                        <span class=var>size, function, definition, jacobian, init, variable, nls, summary, clear</span>
                                                        <ul>
                                                            <li><span class=var>size&ensp;n</span><br>
-                                                               where <span class=var>n</span> is the algebraic system's size. The default value is
+                                                               <span class=var>n</span> is the algebraic system's size. The default value is
                                                                <span class=var>n=1</span>.
                                                            <li><span class=var>function&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string giving the name of an existing function
+                                                               <span class=var>s</span> is a string giving the name of an existing function
                                                                (Functions can be defined in <a href="#data">data</a>).
                                                                For a system, this argument must be repeated as many times as the number of equations.
                                                            <li><span class=var>definition&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string defining analytically a function.
+                                                               <span class=var>s</span> is a string defining analytically a function.
                                                                Note that if the string contains blank spaces it must be surrounded by
                                                                <span class=var>"</span>. For a system, this argument must be repeated as many times 
                                                                as the number of equations.
                                                            <li><span class=var>jacobian&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
-                                                               where <span class=var>y1, y2, ...</span> are the partial derivatives of a function of the system.
+                                                               <span class=var>y1, y2, ...</span> are the partial derivatives of a function of the system.
                                                                The keyword <span class=var>jacobian</span> must be called for each function of the system in
                                                                their natural order. By default the values of the jacobian are computed analytically from the
                                                                expression of the functions.
                                                            <li><span class=var>init&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
                                                                <span class=var>y1, y2, ...</span> are initial guesses of the solution components.
                                                            <li><span class=var>variable&ensp;x</span><br>
-                                                               where <span class=var>x</span> is the name of the variable (or field).
+                                                               <span class=var>x</span> is the name of the variable (or field).
                                                                This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than 
                                                                <span class=var>1</span>, the unknowns are necessarily <span class=var>x1, x2, ...</span>
                                                            <li><span class=var>nls&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string defining an iterative method to solve
+                                                               <span class=var>s</span> is a string defining an iterative method to solve
                                                                the nonlinear system. The default value is <span class=var>newton</span>. 
                                                                The string <span class=var>s</span> it to choose 
                                                                among the values <span class=var>bisection, regula-falsi, secant, newton</span>. Note that
@@ -557,7 +558,7 @@
                                                        Command <span class=vvar>ode</span> defines an ordinary differential equation (or system of ordinary 
                                                        differential equations) to solve by a numerical method. It can be given either by a short or
                                                        an extended form.
-                                                       
+            
                                                        <p></p>
                                                        In its short version the command syntax is:<br>
                                                        <span class=var>ode&ensp;[size=n]&ensp;[function=f]&ensp;[definition=d]&ensp;[var=x]&ensp;
@@ -597,31 +598,31 @@
                                                         scheme, summary, clear</span>
                                                        <ul>
                                                            <li><span class=var>size&ensp;n</span><br>
-                                                               where <span class=var>n</span> is the ode system's size. The default value is
+                                                               <span class=var>n</span> is the ode system's size. The default value is
                                                                <span class=var>n=1</span>.
                                                            <li><span class=var>function&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string giving the name of an existing function.
+                                                               <span class=var>s</span> is a string giving the name of an existing function.
                                                                For a system, this argument must be repeated as many times as the number of equations.
                                                            <li><span class=var>definition&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string defining analytically a function.
+                                                               <span class=var>s</span> is a string defining analytically a function.
                                                                Note that if the string contains blank spaces it must be surrounded by
                                                                <span class=var>"</span>. For a system, this argument must be repeated as many times 
                                                                as the number of equations.
                                                            <li><span class=var>jacobian&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
-                                                               where <span class=var>y1, y2, ...</span> are the partial derivatives of a function of the system.
+                                                               <span class=var>y1, y2, ...</span> are the partial derivatives of a function of the system.
                                                                The keyword <span class=var>jacobian</span> must be called for each function of the system in
                                                                their natural order. By default the values of the jacobian are computed analytically from the
                                                                expression of the functions.
                                                            <li><span class=var>initial&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
                                                                <span class=var>y1, y2, ...</span> are initial guesses of the solution components.
                                                            <li><span class=var>variable&ensp;y</span><br>
-                                                               where <span class=var>y</span> is the name of the variable (or field) other than the time variable, which is
+                                                               <span class=var>y</span> is the name of the variable (or field) other than the time variable, which is
                                                                necessarily <span class=var>t</span>.
                                                                This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than 
                                                                <span class=var>1</span>, the unknowns are necessarily <span class=var>y1, y2, ...</span>
                                                            <li><span class=var>scheme&ensp;s</span><br>
-                                                               where <span class=var>s</span> is a string defining Time integration scheme. This is a string to choose among the values: 
+                                                               <span class=var>s</span> is a string defining Time integration scheme. This is a string to choose among the values: 
                                                                <span class=var>forward-euler</span>,
                                                                <span class=var>backward-euler</span>,
                                                                <span class=var>crank-nicolson</span>,
@@ -649,7 +650,7 @@
                                                        
                                                        The command <span class=vvar>pde</span> has one argument:<br>
                                                        <span class=var>pde&ensp;eq</span><br>
-                                                       where <span class=var>eq</span> is a string defining the pde to solve. In the current release, the following pde's are
+                                                       <span class=var>eq</span> is a string defining the pde to solve. In the current release, the following pde's are
                                                        available:<br>
                                                        <ul>
                                                            <li><span class=var>laplace</span>: For the Laplace equation, with a right-hand side, in 1-D, 2-D and 3-D.</li>
@@ -669,7 +670,7 @@
                                                        <span class=var>field, coef, init, bc, bf, sf, space, ls, clear</span>
                                                        <ul>
                                                            <li><span class=var>field&ensp;u</span><br>
-                                                               where <span class=var>u</span> is a string defining a field (vector of unknowns) for the equation. If the field
+                                                               <span class=var>u</span> is a string defining a field (vector of unknowns) for the equation. If the field
                                                                has been defined already, this one will be used. If not, the new field will be added to the list of fields. This 
                                                                argument has to be given as many times as the equation requires it (<i>e.g.</i> Incompressible Navier-Stokes equations
                                                                need 2 fields: velocity and pressure).
@@ -713,13 +714,13 @@
                                                                to prescribe or a string defining a regular expression as function of <span class=var>x, y, z, t</span>, space 
                                                                and time coordinates.</li>
                                                            <li><span class=var>space&ensp;m</span><br>
-                                                               where <span class=var>m</span> is the chosen space discretization method. This string is to be chosen among the
+                                                               <span class=var>m</span> is the chosen space discretization method. This string is to be chosen among the
                                                                values: <span class=var>fd</span> (Finite Differences), <span class=var>feP1</span> (P<sub>1</sub> Finite Elements), 
                                                                <span class=var>feP2</span> (P<sub>2</sub> Finite Elements), <span class=var>feQ1</span> (Q<sub>1</sub> Finite
                                                                Elements), <span class=var>fv</span> (Finite Volumes). An error will be issued if the chosen method is not 
                                                                implemented in <span class=logo>OFELI</span>.</li>
                                                            <li><span class=var>ls&ensp;s&ensp;p</span><br>
-                                                               where <span class=var>s</span> is the solver of the resulting linear system. This string is to choose among the
+                                                               <span class=var>s</span> is the solver of the resulting linear system. This string is to choose among the
                                                                values <span class=var>direct, cg, cgs, bicg, bicg-stab, gmres</span>. Moreover, <span class=var>p</span> is the
                                                                preconditioner if an iterative solver is chosen. This string is to pick among the values: 
                                                                <span class=var>ident, diag, dilu, ilu, ssor</span>.</li>

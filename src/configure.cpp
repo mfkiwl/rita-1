@@ -73,10 +73,10 @@ void configure::init()
    }
    save();
    _ofl.open(_log_file);
-   _ofl << "# rita Log file" << endl;
+   _ofl << "# rita log file" << endl;
    _ofl << "# " << currentDateTime() << "\n#\n";
    _ofh.open(_his_file);
-   _ofh << "# rita History file" << endl;
+   _ofh << "# rita history file" << endl;
    _ofh << "# " << currentDateTime() << "\n#\n";
 }
 

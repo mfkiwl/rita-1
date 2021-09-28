@@ -82,10 +82,10 @@ class solve
     equa *_pde;
 
     void save();
-    void print(int f=-1);
+    void display(int f=-1);
     int plot();
-    int run_steady(int eq);
-    int run_transient(int eq);
+    int run_steady();
+    int run_transient();
     int run_optim();
     int run_eigen();
     void get_error(int eq, int i);

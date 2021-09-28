@@ -13,5 +13,5 @@ optim
   end
 solve
   run
-  print
+  display
 exit

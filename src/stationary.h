@@ -39,7 +39,7 @@ class stationary
 
  public:
 
-    stationary(rita *r, int eq);
+    stationary(rita *r);
     ~stationary();
     void setSave(vector<int>& isave, vector<int>& format, vector<string>& file);
     int run();
@@ -48,7 +48,7 @@ class stationary
 
     rita *_rita;
     data *_data;
-    int _nb_fields, _nb_eq, _rs, _eq;
+    int _nb_fields, _rs;
     vector<int> *_fformat, *_isave;
     vector<string> *_save_file;
     equa *_pde_eq;

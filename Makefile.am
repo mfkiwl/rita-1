@@ -10,7 +10,7 @@ AUX_DIST = config.guess \
            mdate-sh \
            missing \
            mkinstalldirs \
-           install.sh
+           install-rita.sh
 
 AUX_DIST_EXTRA = readline.m4 \
                  sys_errlist.m4 \

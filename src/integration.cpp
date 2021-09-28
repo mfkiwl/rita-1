@@ -75,10 +75,6 @@ int integration::run()
                                    "ne","form$ula"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
-   if (nb_args==0) {
-      _rita->msg("integration>","No argument for command."+H);
-      return 1;
-   }
    if (nb_args<1) {
       _rita->msg("integration>","No argument for command.");
       return 1;
@@ -90,6 +86,7 @@ int integration::run()
          _rita->msg("integration>","Insufficient number of arguments.");
          return 1;
       }
+
       switch (n) {
 
          case 100:
@@ -180,12 +177,12 @@ int integration::run()
             for (int i=0; i<dim; ++i)
                var.push_back(var_name+to_string(i+1));
          }
-         theData->addFunction("",def,var);
+         theData->addFunction(def,var);
          if (theData->iField<theData->nb_fields-1)
-            theData->FieldType[theData->iField] = INTEGR;
+            theData->FieldType[theData->iField] = data::eqType::INTEGR;
          else
-            theData->FieldType.push_back(INTEGR);
-         IFct = theData->theFct[theData->nb_fcts-1];
+            theData->FieldType.push_back(data::eqType::INTEGR);
+         IFct = theData->theFct[theData->iFct];
       }
       nim = Nint[form];
       *_rita->ofh << " formula=" << form;

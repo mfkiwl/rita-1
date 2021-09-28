@@ -4,7 +4,7 @@
 # Here the function is defined in the 'data' section
 # Note that since the trapezoidal rule is the default method it doesn't need to be mentioned
 #
-@ N=40
+param N=40
 data
   function name=g field=y def=exp(y)
   end

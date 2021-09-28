@@ -5,5 +5,5 @@ example1.rita:
 An example of parameters to define an integration formula
 
 example2.rita:
-An example of parameterized mesh with pde solution
+An example of parameterized mesh with solution of a pde
 

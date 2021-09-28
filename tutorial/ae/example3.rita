@@ -16,5 +16,5 @@ algebraic
   end
 solve
   run
-  print
+  display
 exit

@@ -39,21 +39,17 @@
 
 namespace RITA {
 
-transient::transient(rita *r,
-                     int  eq)
+transient::transient(rita *r)
           : _phase(false), _rita(r), _rs(1)
 {
-   _eq = eq;
    _data = _rita->_data;
+   _nb_ae = _data->nb_ae;
+   _nb_ode = _data->nb_ode;
+   _nb_pde = _data->nb_pde;
    _nb_fields = _data->nb_fields;
-   _nb_eq = _data->nb_eq;
    theTimeStep = _time_step = _rita->_time_step;
    _init_time = _rita->_init_time;
    theFinalTime = _final_time = _rita->_final_time;
-   if (_data->eq_type[_eq]==ALGEBRAIC_EQ)
-      _ae_eq = _data->theAE[_eq];
-   else if (_data->eq_type[_eq]==PDE_EQ)
-      _pde_eq = _data->thePDE[_eq];
 }
 
 
@@ -62,9 +58,11 @@ transient::~transient()
 }
 
 
-int transient::setPDE(OFELI::TimeStepping& ts)
+int transient::setPDE(OFELI::TimeStepping& ts,
+                      int                  e)
 {
    try {
+      _pde_eq = _data->thePDE[e];
       ts.set(_rita->_sch[_rita->_scheme],_time_step,_final_time);
       ts.setPDE(*(_pde_eq->theEquation));
       ts.setLinearSolver(_pde_eq->ls,_pde_eq->prec);
@@ -107,55 +105,55 @@ int transient::run()
    OFELI::ODESolver ode;
    OFELI::NLASSolver nlas;
    OFELI::TimeStepping ts;
-   for (int e=0; e<_nb_eq; ++e) {
-      if (e==_eq) {
-         if (_data->eq_type[e]==ODE_EQ) {
-            _ode_eq = _data->theODE[e];
-            ode.set(_ode_eq->scheme,_time_step,_final_time);
-            ode.setNbEq(_ode_eq->size);
-            int f = _ode_eq->field;
-            fn[f] = "rita-" + to_string(10*(e+1)+f+1) + ".sol";
-         }
-         else if (_data->eq_type[e]==ALGEBRAIC_EQ) {
-            nlas.set(_ae_eq->nls);
-            nlas.setNbEq(_ae_eq->size);
-            int f = _data->theAE[e]->field;
-            fn[f] = "rita-" + to_string(10*(e+1)+f+1) + ".sol";
-         }
-         else if (_data->eq_type[e]==PDE_EQ) {
-            _pde_eq = _data->thePDE[e];
-            setPDE(ts);
-            for (int i=0; i<_pde_eq->nb_fields; ++i) {
-               int f = _pde_eq->fd[i].field;
-               fn[f] = "rita-" + to_string(10*(e+1)+f+1) + ".sol";
-            }
-         }
+
+   for (int e=1; e<=_nb_ode; ++e) {
+      _ode_eq = _data->theODE[e];
+      ode.set(_ode_eq->scheme,_time_step,_final_time);
+      ode.setNbEq(_ode_eq->size);
+      int f = _ode_eq->field;
+      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
+   }
+
+   for (int e=1; e<=_nb_ae; ++e) {
+      _ae_eq = _data->theAE[e];
+      nlas.set(_ae_eq->nls);
+      nlas.setNbEq(_ae_eq->size);
+      int f = _data->theAE[e]->field;
+      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
+   }
+
+   for (int e=1; e<=_nb_pde; ++e) {
+      _pde_eq = _data->thePDE[e];
+      setPDE(ts,e);
+      for (int i=0; i<_pde_eq->nb_fields; ++i) {
+         int f = _pde_eq->fd[i].field;
+         fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
       }
    }
 //   if (_nb_eq==1) {
-      if (_data->eq_type[_eq]==ODE_EQ) {
-         _ode_eq = _data->theODE[_eq];
+      for (int e=1; e<=_nb_ode; ++e) {
+         _ode_eq = _data->theODE[e];
          int f = _ode_eq->field;
          _data->u[f]->resize(_ode_eq->size);
          *_data->u[f] = _ode_eq->y;
          if (_rs) {
-            fs[f].open(fn[f].c_str(),std::fstream::out);
-            fs[f] << "# Saved by rita: Solution of ODE, equation: 1" << endl;
-            fs[f] << 0.;
+            fs[f-1].open(fn[f-1].c_str(),std::fstream::out);
+            fs[f-1] << "# Saved by rita: Solution of ODE, equation: 1" << endl;
+            fs[f-1] << 0.;
             for (int i=0; i<_ode_eq->size; ++i)
-               fs[f] << "  " << _ode_eq->y[i];
-            fs[f] << endl;
+               fs[f-1] << "  " << _ode_eq->y[i];
+            fs[f-1] << endl;
          }
-         if ((*_isave)[_eq]) {
-            ffs[f].open((*_save_file)[f].c_str());
-            ffs[f] << "# Saved by rita: Solution of ODE, equation: 1" << endl;
-            ffs[f] << 0.;
+         if ((*_isave)[f]) {
+            ffs[f-1].open((*_save_file)[f].c_str());
+            ffs[f-1] << "# Saved by rita: Solution of ODE, equation: 1" << endl;
+            ffs[f-1] << 0.;
             for (int i=0; i<_ode_eq->size; ++i)
-               ffs[f] << "  " << _ode_eq->y[i];
-            ffs[f] << endl;
+               ffs[f-1] << "  " << _ode_eq->y[i];
+            ffs[f-1] << endl;
             if (_phase) {
-               pfs[f].open((*_phase_file)[f].c_str());
-               pfs[f] << "# Saved by rita: Phase portrait of ODE, equation: 1" << endl;
+               pfs[f-1].open((*_phase_file)[f].c_str());
+               pfs[f-1] << "# Saved by rita: Phase portrait of ODE, equation: 1" << endl;
             }
          }
          if (_ode_eq->size==1)
@@ -163,11 +161,11 @@ int transient::run()
          else
             ode.setInitial(_ode_eq->y);
       }
-      else if (_data->eq_type[_eq]==PDE_EQ && _rs) {
-         _pde_eq = _data->thePDE[_eq];
+      for (int e=1; e<=_nb_pde && _rs; ++e) {
+         _pde_eq = _data->thePDE[e];
          for (int i=0; i<_pde_eq->nb_fields; ++i) {
             int f = _pde_eq->fd[i].field;
-            ff[f].open(fn[f],OFELI::IOField::OUT);
+            ff[f-1].open(fn[f-1],OFELI::IOField::OUT);
          }
       }
 //   }
@@ -181,18 +179,18 @@ int transient::run()
             ffs[f] << "  " << _ode_eq[e]->y;
             if ((*_isave)[f]) {
                ffs[f].open((*_save_file)[f].c_str(),std::fstream::out);
-               ffs[f] << "# Saved by rita: Solution of ODE, equation: " << e+1 << endl;
+               ffs[f] << "# Saved by rita: Solution of ODE, equation: " << e << endl;
                ffs[f] << 0.;
                for (int i=0; i<_rita->_ode[e].size; ++i)
                   ffs[f] << "  " << _ode_eq[e]->y[i];
                ffs[f] << endl;
                if (_phase) {
                   pfs[f].open((*_phase_file)[f].c_str());
-                  pfs[f] << "# Saved by rita: Phase portrait of ODE, equation: " << e+1 << endl;
+                  pfs[f] << "# Saved by rita: Phase portrait of ODE, equation: " << e << endl;
                }
             }
          }
-         if ((*_eq_type)[e]==ALGEBRAIC_EQ) {
+         if ((*_eq_type)[e]==data::eqType::AE) {
             if (_algebraic_eq[e]->size==1)
                nlas.setInitial(_ode_eq[e]->y[0]);
             else
@@ -204,7 +202,7 @@ int transient::run()
             else
                _ode->setInitial(_ode_eq[e]->y);
          }
-         else if ((*_eq_type)[e]==PDE_EQ && _rs) {
+         else if ((*_eq_type)[e]==data::eqType::PDE && _rs) {
             for (int i=0; i<_pde_eq[e]->nb_fields; ++i) {
                int f = _pde_eq[e]->fd[i].field;
                ff[_pde_eq[e]->fd[i].field].open(fn[f],OFELI::IOField::OUT);
@@ -213,18 +211,18 @@ int transient::run()
       }
    }*/
    theStep = 1;
-   if (_data->eq_type[_eq]==ALGEBRAIC_EQ) {
-      _ae_eq = _data->theAE[_eq];
+   for (int e=1; e<=_nb_ae; ++e) {
+      _ae_eq = _data->theAE[e];
       for (int i=0; i<_ae_eq->size; ++i)
          nlas.setf(_ae_eq->theFct[i]);
    }
-   else if (_data->eq_type[_eq]==ODE_EQ) {
-      _ode_eq = _data->theODE[_eq];
+   for (int e=1; e<=_nb_ode; ++e) {
+      _ode_eq = _data->theODE[e];
       for (int i=0; i<_ode_eq->size; ++i)
          ode.setF(_ode_eq->theFct[i]);
    }
-   else if (_data->eq_type[_eq]==PDE_EQ) {
-      _pde_eq = _data->thePDE[_eq];
+   for (int e=1; e<=_nb_pde; ++e) {
+      _pde_eq = _data->thePDE[e];
       ts.setLinearSolver(_pde_eq->ls,_pde_eq->prec);
    }
 
@@ -235,111 +233,93 @@ int transient::run()
          if (_rita->_verb)
             cout << "Performing time step " << theStep <<", Time = " << theTime << endl;
 
-//       Loop on equations to solve
-         for (int e=0; e<_nb_eq; ++e) {
-            if (e==_eq) {
+         for (int e=1; e<=_nb_ae; ++e) {
+            cout << "No algebraic equation solver implemented." << endl;
+         }
 
-//             Case of an algebraic equation
-               if (_data->eq_type[e]==ALGEBRAIC_EQ) {
-//                  int f = _ae_eq->field;
-                  cout << "No algebraic equation solver implemented." << endl;
-               }
-
-//             Case of an ODE
-               else if (_data->eq_type[e]==ODE_EQ) {
-                  _ode_eq = _data->theODE[e];
-                  int f = _ode_eq->field;
-                  OFELI::Vect<double> z(_ode_eq->size);
-                  ode.runOneTimeStep();
-                  if (_ode_eq->size==1)
-                     _ode_eq->y[0] = ode.get();
-                  *_data->u[f] = _ode_eq->y;
-                  if (_rs) {
-                     fs[f] << theTime;
+         for (int e=1; e<=_nb_ode; ++e) {
+            _ode_eq = _data->theODE[e];
+            int f = _ode_eq->field;
+            OFELI::Vect<double> z(_ode_eq->size);
+            ode.runOneTimeStep();
+            if (_ode_eq->size==1)
+               _ode_eq->y[0] = ode.get();
+            *_data->u[f] = _ode_eq->y;
+            if (_rs) {
+               fs[f-1] << theTime;
+               for (int i=0; i<_ode_eq->size; ++i)
+                  fs[f-1] << "  " << _ode_eq->y[i];
+               fs[f-1] << endl;
+            }
+            if ((*_isave)[f]) {
+               if (theStep%(*_isave)[f]==0) {
+                  ffs[f-1] << theTime;
+                  for (int i=0; i<_ode_eq->size; ++i)
+                     ffs[f-1] << "  " << _ode_eq->y[i];
+                  ffs[f-1] << endl;
+                  if (_phase) {
+                     ode.getTimeDerivative(z);
+                     pfs[f-1] << _ode_eq->y[0] << "  ";
                      for (int i=0; i<_ode_eq->size; ++i)
-                        fs[f] << "  " << _ode_eq->y[i];
-                     fs[f] << endl;
-                  }
-                  if ((*_isave)[f]) {
-                     if (theStep%(*_isave)[f]==0) {
-                        ffs[f] << theTime;
-                        for (int i=0; i<_ode_eq->size; ++i)
-                           ffs[f] << "  " << _ode_eq->y[i];
-                        ffs[f] << endl;
-                        if (_phase) {
-                           ode.getTimeDerivative(z);
-                           pfs[f] << _ode_eq->y[0] << "  ";
-                           for (int i=0; i<_ode_eq->size; ++i)
-                              pfs[f] << ode.getTimeDerivative(i+1) << "  ";
-                           pfs[f] << endl;
-                        }
-                     }
+                        pfs[f-1] << ode.getTimeDerivative(i+1) << "  ";
+                     pfs[f-1] << endl;
                   }
                }
+            }
+         }
 
-//             Case of a PDE
-               else if (_data->eq_type[e]==PDE_EQ) {
-                  _pde_eq = _data->thePDE[e];
+         for (int e=1; e<=_nb_pde; ++e) {
+            _pde_eq = _data->thePDE[e];
 
-//                Body force
-                  if (_pde_eq->set_bf) {
-                     _pde_eq->bf.setTime(theTime);
-                     if (_pde_eq->bf.withRegex(1))
-                        _pde_eq->bf.set(_pde_eq->bf_data.exp);
-                     ts.setRHS(_pde_eq->bf);
-                     _pde_eq->theEquation->setInput(BODY_FORCE,_pde_eq->bf);
-                  }
+            if (_pde_eq->set_bf) {
+               _pde_eq->bf.setTime(theTime);
+               if (_pde_eq->bf.withRegex(1))
+                  _pde_eq->bf.set(_pde_eq->bf_data.exp);
+               ts.setRHS(_pde_eq->bf);
+               _pde_eq->theEquation->setInput(BODY_FORCE,_pde_eq->bf);
+            }
 
-//                Boundary condition
-                  if (_pde_eq->set_bc) {
-                     _pde_eq->bc.setTime(theTime);
-                     if (_pde_eq->bc.withRegex(1)) {
-                        for (auto const& v: _pde_eq->bc_data.cexp)
-                           _pde_eq->setNodeBC(v.first,v.second,theTime,_pde_eq->bc);
-                     }
-                     ts.setBC(_pde_eq->bc);
-                  }
+            if (_pde_eq->set_bc) {
+               _pde_eq->bc.setTime(theTime);
+               if (_pde_eq->bc.withRegex(1)) {
+                  for (auto const& v: _pde_eq->bc_data.cexp)
+                     _pde_eq->setNodeBC(v.first,v.second,theTime,_pde_eq->bc);
+               }
+               ts.setBC(_pde_eq->bc);
+            }
 
-//                Boundary force
-                  if (_pde_eq->set_sf) {
-                     _pde_eq->sf.setTime(theTime);
-                     if (_pde_eq->sf.withRegex(1)) {
-                        for (auto const& v: _pde_eq->sf_data.cexp)
-                           _pde_eq->setNodeBC(v.first,v.second,theTime,_pde_eq->sf);
-                     }
+            if (_pde_eq->set_sf) {
+               _pde_eq->sf.setTime(theTime);
+               if (_pde_eq->sf.withRegex(1)) {
+                  for (auto const& v: _pde_eq->sf_data.cexp)
+                     _pde_eq->setNodeBC(v.first,v.second,theTime,_pde_eq->sf);
+               }
             //            ts.setSF(_data->sf[i]);
-                  }
+            }
 
-//                Run
-                  ts.runOneTimeStep();
+            ts.runOneTimeStep();
 
-//                Save in native OFELI format file
-                  for (int i=0; i<_pde_eq->nb_fields; ++i) {
-                     int f = _pde_eq->fd[i].field;
-                     _data->u[f]->setTime(theTime);
-                     _data->u[f]->setName(_data->Field[f]);
-                     if (_rs)
-                        ff[f].put(*_data->u[f]);
-                  }
-               }
+//          Save in native OFELI format file
+            for (int i=0; i<_pde_eq->nb_fields; ++i) {
+               int f = _pde_eq->fd[i].field;
+               _data->u[f]->setTime(theTime);
+               _data->u[f]->setName(_data->Field[f]);
+               if (_rs)
+                  ff[f-1].put(*_data->u[f]);
             }
          }
       }
    } CATCH
 
    theTime -= theTimeStep;
-   for (int e=0; e<_nb_eq; ++e) {
-      if (e==_eq) {
-         if (_data->eq_type[e]==PDE_EQ) {
-            _pde_eq = _data->thePDE[e];
-            for (int i=0; i<_pde_eq->nb_fields; ++i) {
-               int f = _pde_eq->fd[i].field;
-               if (_rs) {
-                  ff[f].close();
-                  OFELI::saveFormat(*(_data->theMesh[0]),fn[f],(*_save_file)[f],(*_fformat)[f],
-                                    (*_isave)[f]);
-               }
-            }
+   for (int e=1; e<=_nb_pde; ++e) {
+      _pde_eq = _data->thePDE[e];
+      for (int i=0; i<_pde_eq->nb_fields; ++i) {
+         int f = _pde_eq->fd[i].field;
+         if (_rs) {
+            ff[f-1].close();
+            OFELI::saveFormat(*(_data->theMesh[_data->iMesh]),fn[f-1],(*_save_file)[e],(*_fformat)[f],
+                              (*_isave)[e]);
          }
       }
    }

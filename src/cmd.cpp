@@ -65,7 +65,7 @@ void cmd::handler(int sig)
    string ans;
    std::cin >> ans;
    if (ans=="y" || ans=="Y")
-      exit(1);
+      exit(0);
 }
 #endif
 
@@ -75,8 +75,7 @@ int cmd::readline(string p)
    _comment = _command = false;
    if (_is!=nullptr) {
       getline(*_is,_buffer);
-      trim(_buffer);
-      _script_line_nb++;
+     _script_line_nb++;
       if (_is->eof()) {
          _is = nullptr;
          return -5;
@@ -93,12 +92,6 @@ int cmd::readline(string p)
    if (_buffer.size()==0)
       return -2;
 
-// End
-   if (_buffer=="exit" || _buffer=="quit")
-      _rita->finish(0);
-   if (_buffer=="EXIT")
-      _rita->finish(1);
-
 // Execute a system command
    if (_buffer[0]=='!') {
       _command = true;
@@ -111,6 +104,10 @@ int cmd::readline(string p)
       _comment = true;
       return -4;
    }
+
+// End
+   if (_buffer=="exit" || _buffer=="quit")
+      _rita->finish();
 
 // Tokenize
    bool q = false;

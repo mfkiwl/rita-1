@@ -46,7 +46,7 @@ class transient
 
  public:
 
-    transient(rita *r, int eq);
+    transient(rita *r);
     ~transient();
     void setLinearSolver(OFELI::Iteration ls, OFELI::Preconditioner prec);
     void setSave(vector<int>& isave, vector<int>& fformat, vector<string>& save_file,
@@ -59,12 +59,12 @@ class transient
     rita *_rita;
     data *_data;
     double _init_time, _final_time, _time_step;
-    int _nb_fields, _nb_eq, _eq, _rs;
+    int _nb_fields, _nb_ae, _nb_ode, _nb_pde, _rs;
     vector<int> *_fformat, *_isave;
     vector<string> *_save_file, *_phase_file;
     odae *_ae_eq, *_ode_eq;
     equa *_pde_eq;
-    int setPDE(OFELI::TimeStepping& ts);
+    int setPDE(OFELI::TimeStepping& ts, int e);
 };
 
 } /* namespace RITA */

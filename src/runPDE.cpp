@@ -71,7 +71,7 @@ int rita::runPDE()
       _pde->log.mesh = true;
       return 1;
    }
-   else if (_data->theMesh[0]->getNbNodes()==0) {
+   else if (_data->theMesh[_data->iMesh]->getNbNodes()==0) {
       msg("pde>","Empty mesh");
       _pde->log.mesh = true;
       return 1;
@@ -239,17 +239,18 @@ int rita::runPDE()
                break;
             }
             ff = spd.substr(0,2);
+            _data->addPDE(_pde);
             for (int i=0; i<nb_fields; ++i) {
                if (ff=="fd")
                   _data->addGridField(field_name[i],_pde->fd[i].nb_dof);
                else if (ff=="fe" || ff=="fv" || ff=="dg")
-                  _data->addMeshField(field_name[i],data::NODES,_pde->fd[i].nb_dof);
-               _data->FieldEquation.push_back(_data->nb_eq);
+                  _data->addMeshField(field_name[i],data::DataSize::NODES,_pde->fd[i].nb_dof);
+               _data->FieldEquation.push_back(_data->getNbEq());
                _pde->fd[i].fn = field_name[i];
                _pde->fd[i].field = _data->iField;
             }
             _pde->log.field = false;
-            _pde->b.setSize(_data->theMesh[0]->getNbEq());
+            _pde->b.setSize(_data->theMesh[_data->iMesh]->getNbEq());
             if (_pde->set_in)
                _pde->setIn();
             if (_pde->set_bc)
@@ -271,14 +272,8 @@ int rita::runPDE()
             _ret = 0;
             *ofh << "  end" << endl;
             _pde->log.pde = false;
-            _data->addPDE("pde_"+to_string(_data->iPDE),_pde);
             _pde->set();
             return 0;
-
-         case -2:
-         case -3:
-         case -4:
-            break;
 
          default:
             msg("pde>","Unknown Command "+_cmd->token(),

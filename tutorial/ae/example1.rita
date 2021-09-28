@@ -9,5 +9,5 @@ solve
   run
 #
 # We output the solution
- print
+ display
 exit

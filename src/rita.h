@@ -128,7 +128,7 @@ class rita
     void initConfig();
     bool meshOK, solveOK, dataOK;
     ofstream *ofh, *ofl, ocf;
-    void finish(int ret);
+    void finish();
 
     friend class configure;
     friend class mesh;

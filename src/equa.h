@@ -65,8 +65,7 @@ class equa
 
     struct PdeData {
        map<int,string> cexp;
-       string exp;
-       string in_file, out_file;
+       string exp, in_file, out_file;
        int size;
        PdeData() { exp=""; in_file=""; out_file=""; size=0; };
     };
@@ -74,7 +73,7 @@ class equa
     struct FieldData {
        int            field, nb_dof;
        string         fn;
-       data::dataSize ds; 
+       data::DataSize ds; 
     };
 
     equa(rita *r);
@@ -136,7 +135,7 @@ class equa
     void check();
     void set(cmd* cmd) { _cmd = cmd; }
     void setNodeBC(int code, string exp, double t, Vect<double>& v);
-    void setSize(Vect<double>& v, data::dataSize s);
+    void setSize(Vect<double>& v, data::DataSize s);
     Log log;
     bool set_u, set_bc, set_bf, set_sf, set_in, set_coef;
     Vect<double> u, b, bc, bf, sf, *theSolution[5];

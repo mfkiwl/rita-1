@@ -20,5 +20,5 @@ pde linear-elasticity
 solve
   save file=example4.pos
   run
-  print 
+  display 
 exit

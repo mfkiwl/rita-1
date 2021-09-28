@@ -195,10 +195,10 @@ OFELI_LIBS = -lofeli
 PACKAGE = rita
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = rita
-PACKAGE_STRING = rita 1.0.1
+PACKAGE_STRING = rita 1.0.2
 PACKAGE_TARNAME = rita
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.0.1
+PACKAGE_VERSION = 1.0.2
 PATH_SEPARATOR = :
 RANLIB = ranlib
 RELEASE = 
@@ -207,7 +207,7 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = 
 SYMBOLIC_CFLAGS = 
-VERSION = 1.0.1
+VERSION = 1.0.2
 abs_builddir = /Users/touzani/Documents/NUMERIC/rita/rita/doc/images
 abs_srcdir = /Users/touzani/Documents/NUMERIC/rita/rita/doc/images
 abs_top_builddir = /Users/touzani/Documents/NUMERIC/rita/rita
@@ -262,8 +262,8 @@ top_builddir = ../..
 top_srcdir = ../..
 MAINTAINERCLEANFILES = Makefile.in
 imagesdir = $(datadir)/rita/doc/images
-images_DATA = rita.jpg
-dist_images_DATA = rita.jpg
+images_DATA = rita.jpg r.jpg
+dist_images_DATA = rita.jpg r.jpg
 all: all-am
 
 .SUFFIXES:
