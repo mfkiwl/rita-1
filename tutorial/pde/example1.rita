@@ -4,10 +4,11 @@
 # The default domain is the interval (0,1)
 # Associate code 1 to end nodes enforce Dirichlet bc later
 #
-# First we define as a constant parameter the number of elements
+# First we define as parameter the number of elements
 param n=10
 #
 # We enter module 'mesh'
+# End nodes are assigned code 1 to enforce boundary conditions
 mesh
   1d ne=n codes=1
 # We leave the 'mesh' module
@@ -19,16 +20,25 @@ mesh
 # We also define space discretization method: P1 finite element method
 # We enter module 'pde'
 pde laplace
+
+# We first define the unknown (mandatory)
   field u
+
+# Nodes with code 1 are imposed the value 0
   bc code=1 val=0.
+
+# We prescribe the RHS of the PDE
   source value=pi*pi*sin(pi*x)
+
+# Discretization uses the P1 FE method
   space feP1
   end
-#
+
 # Solve problem, output solution
 # We enter module 'solve'
 solve
   run
+# print solution
   display
 
 # To test accuracy, set analytical solution and compute error in L2 and max norms

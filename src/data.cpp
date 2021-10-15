@@ -58,11 +58,14 @@ data::data(rita*      r,
    theAE.push_back(nullptr);
    theODE.push_back(nullptr);
    thePDE.push_back(nullptr);
+   theTab.push_back(nullptr);
    AE.push_back(" ");
    ODE.push_back(" ");
    PDE.push_back(" ");
    fct_name.push_back(" ");
    mesh_name.push_back(" ");
+   grid_name.push_back(" ");
+   tab_name.push_back(" ");
    Param.push_back(" ");
    Field.push_back(" ");
    Matr.push_back(" ");
@@ -232,6 +235,80 @@ int data::checkName(const string&   name,
 }
 
 
+void data::setTab2Grid(OFELI::Tabulation* tab)
+{
+   double xmin=0, xmax=0, ymin=0, ymax=0, zmin=0, zmax=0;
+   int nb = tab->getNbVar(1);
+   OFELI::fct &f = tab->Funct[0];
+   int nx = f.Np[0], ny = f.Np[1], nz = f.Np[2];
+   switch (nb)
+   {
+      case 1:
+         xmin = tab->getMinVar(1,1);
+         xmax = tab->getMaxVar(1,1);
+         _theGrid = new OFELI::Grid(xmin,xmax,nx);
+         break;   
+
+      case 2:
+         xmin = tab->getMinVar(1,1);
+         xmax = tab->getMaxVar(1,1);
+         ymin = tab->getMinVar(1,2);
+         ymax = tab->getMaxVar(1,2);
+         _theGrid = new OFELI::Grid(xmin,xmax,ymin,ymax,nx,ny);
+         break;   
+
+      case 3:
+         xmin = tab->getMinVar(1,1);
+         xmax = tab->getMaxVar(1,1);
+         ymin = tab->getMinVar(1,2);
+         ymax = tab->getMaxVar(1,2);
+         zmin = tab->getMinVar(1,3);
+         zmax = tab->getMaxVar(1,3);
+         _theGrid = new OFELI::Grid(xmin,xmax,ymin,ymax,zmin,zmax,nx,ny,nz);
+         break;   
+   }
+   iGrid = ++nb_grids;
+   string name = "G-"+to_string(iGrid);
+   grid_name.push_back(name);
+   theGrid.push_back(_theGrid);
+   GridName[name] = dn[name].i = nb_grids;
+   dn[name].dt = DataType::GRID;
+}
+    
+    
+void data::setTab2Field(OFELI::Tabulation* tab)
+{
+   int nb = tab->getNbVar(1);
+   OFELI::fct &f = tab->Funct[0];
+   int nx = f.Np[0], ny = f.Np[1], nz = f.Np[2];
+   addGridField(tab->getFunctName(1),1);
+   OFELI::Vect<double> *v = u[iField];
+
+   switch (nb) {
+      case 1:
+         v->setSize(nx);
+         for (int i=1; i<=nx; ++i)
+            (*v)(i) = f.Val(i);
+         break;   
+
+      case 2:
+         v->setSize(nx,ny);
+         for (int i=1; i<=nx; ++i)
+            for (int j=1; j<=ny; ++j)
+               (*v)(i,j) = f.Val(i,j);
+         break;   
+
+      case 3:
+         v->setSize(nx,ny,nz);
+         for (int i=1; i<=nx; ++i)
+            for (int j=1; j<=ny; ++j)
+               for (int k=1; k<=nz; ++k)
+                  (*v)(i,j,k) = f.Val(i,j,k);
+         break;   
+   }
+}
+
+
 int data::checkParam(const string& name,
                      double&       value)
 {
@@ -343,7 +420,7 @@ int data::addFunction(const string&         def,
    }
    else {
       cout << "Function "+name+" is redefined." << endl;
-      _rita->msg("data>","Function"+name+" redefined.");
+      _rita->msg("data>","Function "+name+" redefined.");
       iFct = FctName[name];
       theFct[iFct] = _theFct;
    }
@@ -431,6 +508,24 @@ int data::addMatrix(const string& name,
    MatrixName[name] = dn[name].i = nb_matrices;
    dn[name].dt = DataType::MATRIX;
    return iMatrix;
+}
+
+
+int data::addTab(OFELI::Tabulation* tab,
+                 const string&      name)
+{
+   if (TabName[name]==0) {
+      tab_name.push_back(name);
+      iTab = ++nb_tabs;
+      theTab.push_back(tab);
+   }
+   else {
+      iMatrix = TabName[name];
+      theTab[iTab] = tab;
+   }
+   TabName[name] = dn[name].i = nb_tabs;
+   dn[name].dt = DataType::TAB;
+   return iTab;
 }
 
 
@@ -535,8 +630,7 @@ int data::run()
    int key = 0;
    string td = "", fn="";
    static const vector<string> kw {"grid","mesh","field","tab$ulation","func$tion",
-                                   "vect$or","matr$ix","clear","print","save",
-                                   "summary","list"};
+                                   "vect$or","matr$ix","clear","summary","list"};
    *_rita->ofh << "data" << endl;
    while (1) {
       if (_cmd->readline("rita>data> ")<0)
@@ -555,14 +649,18 @@ int data::run()
             cout << "function:   Define a function\n";
             cout << "vector:     Define a vector\n";
             cout << "matrix:     Define a matrix\n";
-            cout << "print:      Print given field\n";
             cout << "save:       Save given field\n";
             cout << "list:       List a specific data entity\n";
             cout << "summary:    Summary of prescribed data" << endl;
             break;
 
          case 102:
-            _ret = _rita->_configure->run();
+            _rita->getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            _verb = _configure->getVerbose();
             break;
 
          case   0:
@@ -598,45 +696,32 @@ int data::run()
             break;
 
          case   8:
-            if (_cmd->setNbArg(1,"Field name to be supplied.",1)) {
-               _rita->msg("data>print>","Missing field name.","",1);
-               break;
-            }
-            _ret = _cmd->get(fn);
-            if (!_ret)
-               print(fn);
-            break;
-
-         case   9:
-            break;
-
-         case  10:
             Summary();
             break;
 
-         case  11:
-               if (_cmd->setNbArg(1,"Type of data to list.")) {
-                  _rita->msg("data>list>","Missing data type to list.","",1);
-                  break;
-               }
-               _cmd->get(td);
-               if (td.substr(0,5)=="param")
-                  ListParams(1);
-               else if (td.substr(0,4)=="grid")
-                  ListGrids(1);
-               else if (td.substr(0,4)=="mesh")
-                  ListMeshes(1);
-               else if (td.substr(0,4)=="vect")
-                  ListVectors(1);
-               else if (td.substr(0,5)=="field")
-                  ListFields(1);
-               else if (td.substr(0,5)=="funct")
-                  ListFunctions(1);
-               else if (td.substr(0,3)=="tab")
-                  ListTabs(1);
-               else if (td.substr(0,5)=="matri")
-                  ListMatrices(1);
-               _ret = 0;
+         case   9:
+            if (_cmd->setNbArg(1,"Type of data to list.")) {
+               _rita->msg("data>list>","Missing data type to list.","",1);
+               break;
+            }
+            _cmd->get(td);
+            if (td.substr(0,5)=="param")
+               ListParams(1);
+            else if (td.substr(0,4)=="grid")
+               ListGrids(1);
+            else if (td.substr(0,4)=="mesh")
+               ListMeshes(1);
+            else if (td.substr(0,4)=="vect")
+               ListVectors(1);
+            else if (td.substr(0,5)=="field")
+               ListFields(1);
+            else if (td.substr(0,5)=="funct")
+               ListFunctions(1);
+            else if (td.substr(0,3)=="tab")
+               ListTabs(1);
+            else if (td.substr(0,5)=="matri")
+               ListMatrices(1);
+            _ret = 0;
             break;
 
          case 104:
@@ -645,7 +730,16 @@ int data::run()
             break;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               _rita->msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               print(fn);
+            break;
+
          case 107:
+         case 108:
             _ret = 0;
             ok = true;
             *_rita->ofh << "  end" << endl;
@@ -693,7 +787,7 @@ void data::print(const string& s)
    k = checkName(s,DataType::MATRIX);
    if (k>0) {
       cout << "Matrix " << s << endl;
-      for (int i=1; i<=theMatrix[k]->getNbRows(); ++i) {
+      for (int i=1; i<=int(theMatrix[k]->getNbRows()); ++i) {
          cout << "Row " << i << ": ";
          for (int j=1; j<=theMatrix[k]->getNbColumns(); ++j)
             cout << (*theMatrix[k])(i,j) << "  ";
@@ -714,6 +808,11 @@ void data::print(const string& s)
    k = checkName(s,DataType::FCT);
    if (k>0) {
       cout << *theFct[k];
+      return;
+   }
+   k = checkName(s,DataType::TAB);
+   if (k>0) {
+      cout << *theTab[k];
       return;
    }
    cout << "Data " << s << " not found." << endl;
@@ -870,7 +969,7 @@ int data::setParam()
 
 int data::setVector()
 {
-   int size=0, nb=0;
+   int nb=0, size=0;
    string name="vect-"+to_string(nb_vectors+1);
    static const vector<string> kw {"name","size","def$ine","set"};
    _cmd->set(kw);
@@ -1327,7 +1426,7 @@ void data::ListFunctions(int opt)
    for (int k=1; k<=nb_fcts; ++k) {
       Fct *f = theFct[k];
       cout << "Function: " << f->name << ", Variable(s): ";
-      for (int j=0; j<f->nb_var-1; ++j)
+      for (int j=0; j<int(f->nb_var)-1; ++j)
          cout << f->var[j] << ",";
       cout << f->var[theFct[k]->nb_var-1] << ", Definition: " << f->expr << endl;
    }
@@ -1341,6 +1440,10 @@ void data::ListTabs(int opt)
       return;
    }
    cout << "Number of tabulations: " << nb_tabs << endl;
+   for (int i=1; i<=nb_tabs; ++i) {
+      cout << "Tabulation: " << tab_name[i] << ", Nb. of variables: " 
+           << theTab[i]->getNbVar(1) << ", Size: " << theTab[i]->getSize(1,1) << endl;
+   }
 }
 
 
@@ -1472,18 +1575,18 @@ void data::ListAE(int opt)
       cout << "Algebraic System name: " << AE[k] << endl;
       if (ae->size>1)
          cout << "Size:           " << ae->size << endl;
-         if (ae->isFct) {
-            if (ae->size==1)
-               cout << "Equation defined by function: " << ae->theFct[0].name << endl;
-            else {
-               for (int i=0; i<ae->size; ++i)
-                  cout << "Equation: " << i+1 << ", defined by function: " << ae->theFct[i].name << endl;
-            }
-         }
+      if (ae->isFct) {
+         if (ae->size==1)
+            cout << "Equation defined by function: " << ae->theFct[0].name << endl;
          else {
-            if (ae->size==1) {
-               cout << "Equation defined by: " << ae->theFct[0].expr << endl;
-               cout << "Variable is          " << ae->theFct[0].var[0] << endl;
+            for (int i=0; i<ae->size; ++i)
+               cout << "Equation: " << i+1 << ", defined by function: " << ae->theFct[i].name << endl;
+         }
+      }
+      else {
+         if (ae->size==1) {
+            cout << "Equation defined by: " << ae->theFct[0].expr << endl;
+            cout << "Variable is          " << ae->theFct[0].var[0] << endl;
          }
          else {
             for (int i=0; i<ae->size; ++i) 

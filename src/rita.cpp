@@ -157,7 +157,7 @@ int rita::run()
 {
    static const vector<string> kw {"load","unload","calc$ulator","data","mesh","stat$ionary","trans$ient",
                                    "eigen","optim","approx$imation","integ$ration","algebraic","ode","pde",
-                                   "summary","solve","print","clear"};
+                                   "summary","solve","clear"};
    int key = 0;
    string fn="";
    while (1) {
@@ -260,15 +260,6 @@ int rita::run()
             break;
 
          case  16:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case  17:
             setClear();
             break;
 
@@ -278,19 +269,27 @@ int rita::run()
             break;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               _data->print(fn);
+            break;
+
          case 107:
+         case 108:
             break;
 
          default:
             msg("","Unknown command: "+_cmd->token(),
                 "Available commands: license, load, unload, calc, data, parameter, mesh, stationary, transient\n"
                 "                    eigen, optim, approximation, integration, algebraic, ode, pde\n"
-                "                    summary, solve, print, clear\n"
-                "Global commands:    help, ?, set, quit, exit");
+                "                    summary, solve, clear\n"
+                "Global commands:    help, ?, set, parameter, print, quit, exit");
             break;
       }
    }
-cout<<"$3"<<endl;
    return 0;
 }
 

@@ -32,6 +32,7 @@
 #include "io/Tabulation.h"
 #include "rita.h"
 #include "cmd.h"
+#include "configure.h"
 #include <map>
 
 namespace RITA {
@@ -68,13 +69,23 @@ class approximation
     rita *_rita;
     configure *_configure;
     cmd *_cmd;
+    data *_data;
+    OFELI::Tabulation *_tab;
     ApproxType _method;
     FitType ft;
-    int _lagrange_degree, _hermite_degree;
-    OFELI::Tabulation _tab;
-    void lagrange();
+    vector<double> _x, _y;
+    int eval(double x);
+    int _verb, _lagrange_degree, _hermite_degree;
+    int lagrange();
+    int piecewise_lagrange();
+    int hermite();
+    int fitting();
+    int bspline();
+    int bezier();
+    int nurbs();
+    int lagrange_eval(double x);
     const vector<string> _kw {"help","?","set","file","lagrange","fitting","bspline","bezier","nurbs"
-                                "end","<","quit","exit"};
+                              "end","<","quit","exit"};
     map<ApproxType,string> rApp = {{LAGRANGE,"lagrange"},
                                    {FITTING,"fitting"},
                                    {BSPLINE,"bspline"},

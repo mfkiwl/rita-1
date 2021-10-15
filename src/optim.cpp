@@ -63,6 +63,7 @@ int optim::run()
    vector<string> grad, hess, var, le_cons, eq_cons;
    OFELI::Vect<double> *A_le, *A_ge, *A_eq;
    string str, J, name="", var_name, method="gradient", constr="";
+   string fn="";
    data *theData = _rita->_data;
    init.clear();
    grad.clear();
@@ -583,8 +584,22 @@ int optim::run()
                cout << "Optimization problem cleared." << endl;
                break;
 
+            case 104:
+            case 105:
+               _rita->setParam();
+               break;
+
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  _rita->msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  theData->print(fn);
+               break;
+
             case 107:
+            case 108:
                _cmd->setNbArg(0);
                if (lp) {
                   if (!count_lp && lp) {
@@ -771,11 +786,6 @@ int optim::run()
                log = 0;
                _rita->_ret = 0;
                return 0;
-
-            case 104:
-            case 105:
-               _rita->setParam();
-               break;
 
             case -2:
             case -3:

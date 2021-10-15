@@ -4,9 +4,13 @@
 #
 # Generate mesh of a domain with circular hole
 mesh
+
+# First define some mesh parameters
   param h1=0.2
   param h2=0.25*h1
   param h3=0.2*h2
+
+# Define points (vertices) of domain
   point  label=1  coord=-1.,-1. size=h1
   point  label=2  coord=1.,-1. size=h1
   point  label=3  coord=1.,1.   size=h1
@@ -14,20 +18,33 @@ mesh
   point  label=5  coord=-0.2,0. size=h2
   point  label=6  coord=0.2,0.  size=h3
   point  label=7  coord=0.,0.   size=h3
+
+# Define lines or curves delimited by points
   curve  label=1  line=1,2
   curve  label=2  line=2,3
   curve  label=3  line=3,4
   curve  label=4  line=4,1
   curve  label=5  circle=5,6,7
   curve  label=6  circle=6,5,7
+
+# Set contours defined by curves 
   contour  label=1  curves=1,2,3,4
   contour  label=2  curves=5,6
+
+# Define surface (the domain) by its contours
   surface  label=1  contours=1,2
+
+# Set codes to impose various data
+# Codes are assigned to points and curves
   code  value=1  points=1,2,3,4
   code  value=2  points=5,6
   code  value=1  curves=1,2,3,4
   code  value=2  curves=5,6
+
+# Code assigned to surface are spread to generated elements
   code  value=10 surfaces=1
+
+# Save geometry, generate mesh and save it in file
   save  geo
   generate
   save  mesh=example3.m

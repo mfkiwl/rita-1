@@ -5,7 +5,7 @@ PREFIX="/usr/local"
 
 mkdir -p $PREFIX/bin
 cp bin/rita $PREFIX/bin/rita
-cp bin/test_rita.sh $PREFIX/bin/test_rita.sh
+cp test_rita.sh $PREFIX/bin/test_rita.sh
 cp bin/gmsh $PREFIX/bin/.
 mkdir -p $PREFIX/lib
 cp -a lib/* $PREFIX/lib/.

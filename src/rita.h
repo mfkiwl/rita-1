@@ -198,7 +198,7 @@ class rita
    int findField(const string& s);
    void msg(const string& loc, const string& m1, const string& m2="", int c=0);
 
-   const vector<string> _gkw {"?","help","lic$ense","set","param$eter","@","end","<"};
+   const vector<string> _gkw {"?","help","lic$ense","set","par$ameter","@","print","end","<"};
    map<string,OFELI::Iteration> Ls = {{"direct",OFELI::DIRECT_SOLVER},
                                       {"cg",OFELI::CG_SOLVER},
                                       {"cgs",OFELI::CGS_SOLVER},

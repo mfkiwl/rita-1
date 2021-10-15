@@ -58,6 +58,7 @@ solve::solve(rita *r, cmd *command, configure *config)
 int solve::run()
 {
    _nb_eq = _data->getNbEq();
+   string fn="";
    int eq=1, i=0;
    static const vector<string> kw {"select","run","save","disp$lay","plot","analytic","error","post"};
    if ((_rita->_analysis_type==STEADY_STATE||_rita->_analysis_type==TRANSIENT) && _nb_eq==0) {
@@ -79,7 +80,6 @@ int solve::run()
       _data->theAE[e]->analytic.resize(_data->theAE[e]->size);
    for (int e=1; e<=_data->nb_ode; ++e)
       _data->theODE[e]->analytic.resize(_data->theODE[e]->size);
-
    for (int e=1; e<=_data->nb_pde; ++e) {
       if (_data->thePDE[e]->log.fail()) {
          if (_data->thePDE[e]->log.pde)
@@ -168,7 +168,7 @@ int solve::run()
             break;
 
          case   3:
-            *_rita->ofh << "  display " << endl;
+            *_rita->ofh << "  display" << endl;
             display();
             break;
 
@@ -208,7 +208,16 @@ int solve::run()
             break;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               _rita->msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               _data->print(fn);
+            break;
+
          case 107:
+         case 108:
             if (_verb>1)
                cout << "Getting back to higher level ..." << endl;
             *_rita->ofh << "  end" << endl;
@@ -422,7 +431,7 @@ void solve::save()
       }
       _save_file[k] = file;
       *_rita->ofh << "  save field=" << fd << " file=" << file << " format=" << fformat
-            << " frequency=" << freq;
+                  << " frequency=" << freq;
       if (_phase) {
          _phase_file[k] = phase_f;
          *_rita->ofh << "  phase=" << phase_f;

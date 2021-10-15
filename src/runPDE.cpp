@@ -39,7 +39,7 @@ namespace RITA {
 int rita::runPDE()
 {
    _pde = new equa(this);
-   string pde_name;
+   string pde_name, fn="";
    int ret=0;
    if (_cmd->setNbArg(1,"Give PDE name.")) {
       msg("pde>","Missing pde name.","",1);
@@ -217,7 +217,16 @@ int rita::runPDE()
             break;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               _data->print(fn);
+            break;
+
          case 107:
+         case 108:
            _cmd->setNbArg(0);
             if (_ret) {
                msg("pde>end>","No PDE data created.");

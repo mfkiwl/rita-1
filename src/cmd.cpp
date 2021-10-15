@@ -95,7 +95,8 @@ int cmd::readline(string p)
 // Execute a system command
    if (_buffer[0]=='!') {
       _command = true;
-      system(_buffer.substr(1,_buffer.size()).c_str());
+      if (system(_buffer.substr(1,_buffer.size()).c_str()))
+         cout << "Error in system command." << endl;
       return -3;
    }
 

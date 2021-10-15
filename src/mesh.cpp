@@ -61,6 +61,7 @@ mesh::~mesh()
 
 int mesh::run()
 {
+   string fn="";
    _nb_dof = 1;
    _data = _rita->_data;
    static const vector<string> kw {"1d","rect$angle","cube","point","curve","surface","volume","contour",
@@ -154,7 +155,16 @@ int mesh::run()
             break;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               _rita->msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               _data->print(fn);
+            break;
+
          case 107:
+         case 108:
             *_rita->ofh << "  end" << endl;
              _ret = 0;
             return _ret;
@@ -225,6 +235,7 @@ void mesh::setConfigure()
 
 void mesh::set1D()
 {
+   string fn="";
    _dim = 1;
    _nb_dof = 1;
    double xmin=0., xmax=1.;
@@ -452,7 +463,16 @@ void mesh::set1D()
                break;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  _rita->msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -486,6 +506,7 @@ void mesh::set1D()
 
 void mesh::setRectangle()
 {
+   string fn="";
    double xmin=0., xmax=1., ymin=0., ymax=1.;
    int c[4] = {0,0,0,0}, cv[4] = {0,0,0,0};
    int nb=0, nx=10, ny=10, ret=0, ret1=0, ret2=0, ret3=0, ret4=0;
@@ -774,7 +795,16 @@ void mesh::setRectangle()
                break;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  _rita->msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                *_rita->ofh << "    end" << endl;
@@ -808,6 +838,7 @@ void mesh::setRectangle()
 
 void mesh::setCube()
 {
+   string fn="";
    double xmin=0., xmax=1., ymin=0., ymax=1., zmin=0., zmax=1.;
    int nb=0, ret=0, nx=10, ny=10, nz=10, cxmin=0, cxmax=0, cymin=0, cymax=0, czmin=0, czmax=0;
    _nb_dof = 1;
@@ -1095,7 +1126,16 @@ void mesh::setCube()
                break;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  _rita->msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -1829,6 +1869,7 @@ void mesh::setVolume()
 void mesh::setSubDomain()
 {
    _ret = 0;
+   string fn="";
    if (_generator>0 && _generator<=3) {
       _rita->msg("mesh>vertex>","Mesh already generated. Needs retyping command to confirm.");
       _generator = 0;
@@ -1934,7 +1975,16 @@ void mesh::setSubDomain()
             return;
 
          case 106:
+            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+               _rita->msg("print>","Missing data name.","",1);
+               break;
+            }
+            if (!_cmd->get(fn))
+               _data->print(fn);
+            break;
+
          case 107:
+         case 108:
             _ret = 100;
             return;
 
@@ -2136,6 +2186,7 @@ void mesh::setNbDOF()
 
 void mesh::Plot()
 {
+   string fn="";
    if (_theMesh==nullptr) {
       _rita->msg("mesh>plot>","No mesh to plot.");
       return;
@@ -2158,7 +2209,7 @@ void mesh::Read()
 {
    int ret=0;
    ifstream ip;
-   string dom_file, file, bamg_file, geo_file, out_file, Cmd, msh_file;
+   string dom_file, file, bamg_file, geo_file, out_file, Cmd, msh_file, fn="";
    int mesh_ok=0, geo_ok=0, gmsh_ok=0;
    static const vector<string> kw {"mesh","geo","gmsh"};
    _cmd->set(kw);
@@ -2365,7 +2416,16 @@ void mesh::Read()
                return;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  _rita->msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                _ret = 0;
                return;
 

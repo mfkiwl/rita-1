@@ -66,6 +66,7 @@ class integration
     rita *_rita;
     std::ofstream *_ofh;
     configure *_configure;
+    data *_data;
     cmd *_cmd;
     vector<double> _x, _y, _z;
     OFELI::Fct *IFct;

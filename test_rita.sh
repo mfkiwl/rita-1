@@ -14,9 +14,9 @@ echo "Test solution of algebraic equations (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 
-../../src/rita example1.rita
-../../src/rita example2.rita
-../../src/rita example3.rita
+rita example1.rita
+rita example2.rita
+rita example3.rita
 fi
 
 echo "-----------------------------------------------------------"
@@ -24,8 +24,8 @@ echo "Test solution of ordinary differential equations (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 cd ../ode
-../../src/rita example1.rita
-../../src/rita example2.rita
+rita example1.rita
+rita example2.rita
 fi
 
 echo "----------------------------------------------------------"
@@ -33,11 +33,11 @@ echo "Test solution of partial differential equations (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 cd ../pde
-../../src/rita example1.rita
-../../src/rita example2.rita
-../../src/rita example3.rita
-../../src/rita example4.rita
-../../src/rita example5.rita
+rita example1.rita
+rita example2.rita
+rita example3.rita
+rita example4.rita
+rita example5.rita
 fi
 
 echo "-------------------------------------------------"
@@ -45,10 +45,10 @@ echo "Test solution of optimization problems (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 cd ../optim
-../../src/rita example1.rita
-../../src/rita example2.rita
-../../src/rita example3.rita
-../../src/rita example4.rita
+rita example1.rita
+rita example2.rita
+rita example3.rita
+rita example4.rita
 fi
 
 echo "-------------------------------------"
@@ -56,8 +56,8 @@ echo "Test numerical integration (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 cd ../integration
-../../src/rita example1.rita
-../../src/rita example2.rita
+rita example1.rita
+rita example2.rita
 fi
 
 echo "-------------------------------------"
@@ -65,8 +65,8 @@ echo "Test calculator (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 cd ../calc
-../../src/rita example1.rita
-../../src/rita example2.rita
+rita example1.rita
+rita example2.rita
 fi
 
 echo "-----------------------------------"
@@ -74,10 +74,20 @@ echo "Remove all created files (y/n) ? \c"
 read ans
 if test "$ans" = "y" ; then
 echo "Cleaning ..."
-cd ..
-make clean
+cd ../ae
+rm -f *.dat *.sol .rita.log .rita.his
+cd ../ode
+rm -f *.dat *.sol .rita.log .rita.his
+cd ../pde
+rm -f *.dat *.bamg *.dom rita.m *.pos *.geo *.vtk rita-1d.m example*.m *.msh *.sol .rita.log .rita.his
+cd ../optim
+rm -f *.dat *.sol .rita.log .rita.his
+cd ../integration
+rm -f *.dat *.sol .rita.log .rita.his
+cd ../calc
+rm -f *.dat *.sol .rita.log .rita.his
 fi
 
-cd ../..
+cd ..
 echo "========================================================="
 echo "rita Testing complete"

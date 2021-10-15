@@ -67,6 +67,7 @@ class data
     int addAE(odae *ae, string name="");
     int addODE(odae *ode, string name="");
     int addPDE(equa *pde, string name="");
+    int addTab(OFELI::Tabulation *tab, const string &name);
     int checkName(const string& name, const DataType& dt, int opt=0);
     int checkField(const string& name);
     int checkMatrix(const string& name);
@@ -88,6 +89,8 @@ class data
     int getPar(int n, const string& msg, int& v);
     void print(const string &s);
     int getNbEq() const { return nb_ae+nb_ode+nb_pde; }
+    void setTab2Grid(OFELI::Tabulation* tab);
+    void setTab2Field(OFELI::Tabulation* tab);
 
     int nb_fields, nb_fcts, nb_tabs, nb_meshes, nb_grids, nb_params, nb_vectors, nb_matrices;
     int nb_pde, nb_ode, nb_ae, nb_opt, nb_int, nb_eigen, nb_eq;

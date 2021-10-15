@@ -27,7 +27,7 @@ sinclude([VERSION])
 AC_SUBST(VERSION)
 AC_SUBST(RELEASE)
 
-AC_INIT([rita],[1.0.2])
+AC_INIT([rita],[1.0.3])
 AC_CONFIG_SRCDIR([src/rita.cpp])
 AM_INIT_AUTOMAKE([subdir-objects])
 

@@ -48,7 +48,7 @@ int rita::runODE()
    odae *ode = new odae;
    ode->isSet = false;
    _analysis_type = TRANSIENT;
-   string str="", var_name="y", scheme="forward-euler";
+   string str="", var_name="y", scheme="forward-euler", fn="";
    static const vector<string> kw {"size","func$tion","def$inition","variable","field","init$ial",
                                    "final$-time","time-step","scheme","summary","clear"};
    _cmd->set(kw,_gkw);
@@ -404,7 +404,16 @@ int rita::runODE()
                break;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                if (count_fct==0 && count_def==0) {
                   NO_ODE
                   *ofh << "  end" << endl;

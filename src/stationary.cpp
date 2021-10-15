@@ -164,7 +164,7 @@ int stationary::run()
          if (_pde_eq->set_bf) {
             if (_pde_eq->bf.withRegex(e))
                _pde_eq->bf.set(_pde_eq->bf_data.exp);
-               _pde_eq->theEquation->setInput(BODY_FORCE,_pde_eq->bf);
+            _pde_eq->theEquation->setInput(BODY_FORCE,_pde_eq->bf);
          }
          if (_pde_eq->set_sf) {
             if (_pde_eq->sf.withRegex(e)) {

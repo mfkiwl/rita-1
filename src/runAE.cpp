@@ -38,7 +38,7 @@ namespace RITA {
 
 int rita::runAE()
 {
-   string str = "", var_name = "x", nls = "newton";
+   string str = "", var_name = "x", nls = "newton", fn="";
    bool field_ok = false;
    int ret=0, size=1, ind=-1, n=0;
    int count_field=0, count_fct=0, count_def=0, count_J=0, count_init=0;
@@ -445,7 +445,16 @@ int rita::runAE()
                break;
 
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+            case 108:
                _cmd->setNbArg(0);
                if (!field_ok || (!count_fct && !count_def)) {
                   msg("algebraic>end>","Algebraic equation incompletely defined.");

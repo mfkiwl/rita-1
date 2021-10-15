@@ -1,6 +1,8 @@
-# Iris Script file to practice numerical integration
-# We integrate the function f(x)=exp(x) on (0,1) using
-# the trapezoidal rule on a subdivision into 10 sub-intervals
+# Iris Script file to practice data approximation
+# We use Lagrange interpolation with 3 points
+# rita creates a vector (or field) which is the interpolated vector
 #
-integration var=x  definition=exp(x)
+approximation name=Tab1 file=ex2.dat piecewise_lagrange
+print f
+print Tab1
 exit
