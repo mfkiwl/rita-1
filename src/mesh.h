@@ -7,7 +7,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -108,7 +108,6 @@ class mesh
    void Read();
    void Save();
    void saveGeo(const string& file);
-   void getHelp();
    void setConfigure();
 };
 

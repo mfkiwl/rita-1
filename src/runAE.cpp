@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -198,25 +198,6 @@ int rita::runAE()
          if (_cmd->readline("rita>algebraic> ")<0)
             continue;
          switch (key=_cmd->getKW(kw,_gkw)) {
-
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable Commands:\n";
-               cout << "size:       Size of algebraic system: (Number of equations)\n";
-               cout << "function:   Name of already defined function\n";
-               cout << "definition: Give function expression F to define the algebraic equation F(x)=0\n";
-               cout << "jacobian:   Define jacobian of mapping (for the Newton's algorithm)\n";
-               cout << "variable:   Variable (field) name as unknown of the equation\n";
-               cout << "init:       Initial guess for iterations\n";
-               cout << "nls:        Nonlinear equation iteration solver\n";
-               cout << "summary:    Summary of Algebraic equation attributes\n";
-               cout << "clear:      Remove equation from model" << endl;
-               break;
-
-            case 102:
-               _ret = _configure->run();
-               break;
 
             case   0:
                if (_cmd->setNbArg(1,"Size of algebraic system to be given.")) {
@@ -439,6 +420,29 @@ int rita::runAE()
                _ret = 10;
                return _ret;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands:\n";
+               cout << "size:       Size of algebraic system: (Number of equations)\n";
+               cout << "function:   Name of already defined function\n";
+               cout << "definition: Give function expression F to define the algebraic equation F(x)=0\n";
+               cout << "jacobian:   Define jacobian of mapping (for the Newton's algorithm)\n";
+               cout << "variable:   Variable (field) name as unknown of the equation\n";
+               cout << "init:       Initial guess for iterations\n";
+               cout << "nls:        Nonlinear equation iteration solver\n";
+               cout << "summary:    Summary of Algebraic equation attributes\n";
+               cout << "clear:      Remove equation from model" << endl;
+               break;
+
+            case 102:
+               getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               break;
+
             case 104:
             case 105:
                setParam();
@@ -454,7 +458,11 @@ int rita::runAE()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                _cmd->setNbArg(0);
                if (!field_ok || (!count_fct && !count_def)) {
                   msg("algebraic>end>","Algebraic equation incompletely defined.");

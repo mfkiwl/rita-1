@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -630,38 +630,13 @@ int data::run()
    int key = 0;
    string td = "", fn="";
    static const vector<string> kw {"grid","mesh","field","tab$ulation","func$tion",
-                                   "vect$or","matr$ix","clear","summary","list"};
+                                   "vect$or","matr$ix","summary","list"};
    *_rita->ofh << "data" << endl;
    while (1) {
       if (_cmd->readline("rita>data> ")<0)
          continue;
 
       switch (key=_cmd->getKW(kw,_rita->_gkw)) {
-
-         case 100:
-         case 101:
-            _cmd->setNbArg(0);
-            cout << "\nAvailable Commands:\n";
-            cout << "grid:       Define a grid\n";
-            cout << "mesh:       Define a finite element mesh\n";
-            cout << "field:      Define a field\n";
-            cout << "tabulation: Define a tabulated function\n";
-            cout << "function:   Define a function\n";
-            cout << "vector:     Define a vector\n";
-            cout << "matrix:     Define a matrix\n";
-            cout << "save:       Save given field\n";
-            cout << "list:       List a specific data entity\n";
-            cout << "summary:    Summary of prescribed data" << endl;
-            break;
-
-         case 102:
-            _rita->getLicense();
-            break;
-
-         case 103:
-            _ret = _configure->run();
-            _verb = _configure->getVerbose();
-            break;
 
          case   0:
             _ret = setGrid();
@@ -692,14 +667,10 @@ int data::run()
             break;
 
          case   7:
-	   //            Clear();
-            break;
-
-         case   8:
             Summary();
             break;
 
-         case   9:
+         case   8:
             if (_cmd->setNbArg(1,"Type of data to list.")) {
                _rita->msg("data>list>","Missing data type to list.","",1);
                break;
@@ -724,6 +695,21 @@ int data::run()
             _ret = 0;
             break;
 
+         case 100:
+         case 101:
+            _cmd->setNbArg(0);
+            getHelp();
+            break;
+
+         case 102:
+            _rita->getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            _verb = _configure->getVerbose();
+            break;
+
          case 104:
          case 105:
             _rita->setParam();
@@ -739,7 +725,11 @@ int data::run()
             break;
 
          case 107:
+            Summary();
+            break;
+
          case 108:
+         case 109:
             _ret = 0;
             ok = true;
             *_rita->ofh << "  end" << endl;
@@ -758,16 +748,23 @@ int data::run()
 
 void data::getHelp()
 {
-   cout << "In command data, the following data can be defined:\n";
-   cout << "field: Define a field (unknown)\n";
-   cout << "function: Define a function\n";
-   cout << "mesh: Clear all defined fields\n";
-   cout << "summary: Display this summary\n\n";
+   cout << "\nAvailable Commands in mode 'data':\n";
+   cout << "grid:       Define a grid\n";
+   cout << "mesh:       Define a finite element mesh (can be accessed from the top level)\n";
+   cout << "field:      Define a field (or vector)\n";
+   cout << "matrix:     Define a matrix\n";
+   cout << "tabulation: Define a tabulation\n";
+   cout << "function:   Define a function\n";
+   cout << "matrix:     Define a matrix\n";
+   cout << "list:       List a specific entity\n";
    cout << "Global commands: \n";
-   cout << "help or ?: Display this help\n";
-   cout << "set: Set configuration data\n";
-   cout << "end or <: Back to higher level\n";
-   cout << "exit: End the program\n" << endl;
+   cout << "help or ?:  Display this help\n";
+   cout << "set:        Set configuration data\n";
+   cout << "par or @:   Defined a parameter (constant)\n";
+   cout << "print       print a specific entity\n";
+   cout << "summary:    Summary of defined entities\n\n";
+   cout << "end or <:   Back to higher level\n";
+   cout << "exit:       Terminate execution\n" << endl;
 }
 
 
@@ -789,7 +786,7 @@ void data::print(const string& s)
       cout << "Matrix " << s << endl;
       for (int i=1; i<=int(theMatrix[k]->getNbRows()); ++i) {
          cout << "Row " << i << ": ";
-         for (int j=1; j<=theMatrix[k]->getNbColumns(); ++j)
+         for (int j=1; j<=int(theMatrix[k]->getNbColumns()); ++j)
             cout << (*theMatrix[k])(i,j) << "  ";
          cout << endl;
       }
@@ -928,48 +925,9 @@ int data::setGrid()
 }
 
 
-int data::setParam()
-{
-   int nb=0;
-   string name="par-"+to_string(nb_params+1);
-   static const vector<string> kw {"name","def$ine","set"};
-   _cmd->set(kw,_rita->_gkw);
-   int nb_args = _cmd->getNbArgs();
-   if (nb_args<=0) {
-      _rita->msg("data>parameter>","Error in command.","Available arguments: name, define, set.");
-      return 1;
-   }
-   for (int i=0; i<nb_args; ++i) {
-      int n = _cmd->getArgs(nb);
-      switch (n) {
-
-         case 0:
-            name = _cmd->string_token(0);
-            break;
-
-         case 1:
-            break;
-
-         case 2:
-            break;
-
-         default:
-            _rita->msg("data>parameter>","Unknown argument: "+kw[n]);
-            return 1;
-      }
-   }
-   if (nb_args>0)
-      *_rita->ofh << endl;
-   theParam.push_back(_theParam);
-   ParamName[name] = iParam;
-   nb_params++;
-   return 0;
-}
-
-
 int data::setVector()
 {
-   int nb=0, size=0;
+   int nb=0;
    string name="vect-"+to_string(nb_vectors+1);
    static const vector<string> kw {"name","size","def$ine","set"};
    _cmd->set(kw);
@@ -987,7 +945,7 @@ int data::setVector()
             break;
 
          case 1:
-            size = _cmd->int_token(0);
+	   //           size = _cmd->int_token(0);
             break;
 
          case 2:

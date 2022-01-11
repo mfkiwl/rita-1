@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -69,6 +69,7 @@ int optim::run()
    grad.clear();
    hess.clear();
    map<int,double> llb, uub;
+
    static const vector<string> kw {"size","func$tion","obj$ective","lp","grad$ient","hess$ian","low$-bound",
                                    "up$-bound","ge$-constraint","le$-constraint","eq$-constraint",
                                    "penal$ty","field","init$ial","algo$rithm","summary","clear"};
@@ -134,6 +135,13 @@ int optim::run()
 
          case 14:
             method = _cmd->string_token(0);
+            break;
+
+         case 100:
+         case 101:
+            cout << "\nAvailable Commands:\n";
+            cout << "size, function, objective, lp, gradient, hessian, low-bound, up-bound, ge-constraint\n";
+            cout << "le-constraint, eq-constraint, penalty, variable, init, algorithm\n";
             break;
 
          default:
@@ -277,33 +285,6 @@ int optim::run()
          if (nb<0)
             continue;
          switch (key=_cmd->getKW(kw,_rita->_gkw)) {
-
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable Commands:\n";
-               cout << "size:          Size of optimization problem (Number of optimization variables)\n";
-               cout << "function:      Give function (already defined) as objective (cost) function\n";
-               cout << "objective:     Give objective (cost) function expression\n";
-               cout << "lp:            Define linear programming objective (cost)\n";
-               cout << "gradient:      Define gradient of objective function\n";
-               cout << "hessian:       Define hessian of objective function\n";
-               cout << "low-bound:     Define a lower bound for a given variable as constraint\n";
-               cout << "up-bound:      Define an upper bound for a given variable as constraint\n";
-               cout << "ge-constraint: Define a (>=) inequality constraint (for Linear Programming problems only)\n";
-               cout << "le-constraint: Define a (<=) inequality constraint\n";
-               cout << "eq-constraint: Define an equality constraint\n";
-               cout << "penalty:       Penalty parameter (small) to enforce constraints\n";
-               cout << "variable:      Variable (or field) name as unknown of the optimization problem\n";
-               cout << "init:          Initial guess for iterations\n";
-               cout << "algorithm:     Set optimization algorithm\n";
-               cout << "summary:       Summary of optimization problem attributes\n";
-               cout << "clear:         Clear optimization problem settings" << endl;
-               break;
-
-            case 102:
-               _ret = _rita->_configure->run();
-               break;
 
             case   0:
                if (size<=0) {
@@ -494,6 +475,7 @@ int optim::run()
                _ret = _cmd->get(str);
                le_cons.push_back(str);
                count_lec++;
+cout<<"-> "<<size<<"  "<<le_cons[0]<<endl;
                break;
 
             case  10:
@@ -584,6 +566,37 @@ int optim::run()
                cout << "Optimization problem cleared." << endl;
                break;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands:\n";
+               cout << "size:          Size of optimization problem (Number of optimization variables)\n";
+               cout << "function:      Give function (already defined) as objective (cost) function\n";
+               cout << "objective:     Give objective (cost) function expression\n";
+               cout << "lp:            Define linear programming objective (cost)\n";
+               cout << "gradient:      Define gradient of objective function\n";
+               cout << "hessian:       Define hessian of objective function\n";
+               cout << "low-bound:     Define a lower bound for a given variable as constraint\n";
+               cout << "up-bound:      Define an upper bound for a given variable as constraint\n";
+               cout << "ge-constraint: Define a (>=) inequality constraint (for Linear Programming problems only)\n";
+               cout << "le-constraint: Define a (<=) inequality constraint\n";
+               cout << "eq-constraint: Define an equality constraint\n";
+               cout << "penalty:       Penalty parameter (small) to enforce constraints\n";
+               cout << "variable:      Variable (or field) name as unknown of the optimization problem\n";
+               cout << "init:          Initial guess for iterations\n";
+               cout << "algorithm:     Set optimization algorithm\n";
+               cout << "summary:       Summary of optimization problem attributes\n";
+               cout << "clear:         Clear optimization problem settings" << endl;
+               break;
+
+            case 102:
+               _rita->getLicense();
+               break;
+
+            case 103:
+               _ret = _rita->_configure->run();
+               break;
+
             case 104:
             case 105:
                _rita->setParam();
@@ -599,7 +612,11 @@ int optim::run()
                break;
 
             case 107:
+               theData->Summary();
+               break;
+
             case 108:
+            case 109:
                _cmd->setNbArg(0);
                if (lp) {
                   if (!count_lp && lp) {

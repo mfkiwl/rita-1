@@ -4,7 +4,7 @@
 # This system has 2 solutions:
 #    x1 = -1.11509, x2 =  0.339246 and
 #    x1 = -3.93432, x2 = -1.71298
-# The code give a solution when an appropriate initial guess is given
+# The code gives solution when an appropriate initial guess is given
 # Note that we define the algebraic system by using the extended version
 # of the keyword 'algebraic'
 algebraic

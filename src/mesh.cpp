@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -33,9 +33,9 @@
 #include "rita.h"
 #include "data.h"
 
-#ifdef USE_GMSH
+//#ifdef USE_GMSH
 #include <gmsh.h>
-#endif
+//#endif
 
 namespace RITA {
 
@@ -75,20 +75,6 @@ int mesh::run()
          continue;
       _key = _cmd->getKW(kw,_rita->_gkw);
       switch (_key) {
-
-         case 100:
-         case 101:
-             getHelp();
-             break;
-
-         case 102:
-             setConfigure();
-             break;
-
-         case 104:
-         case 105:
-             _rita->setParam();
-             break;
 
          case   0:
             set1D();
@@ -154,6 +140,42 @@ int mesh::run()
             Read();
             break;
 
+         case 100:
+         case 101:
+            _cmd->setNbArg(0);
+            cout << "\nAvailable commands:" << endl;
+            cout << "1d        : Data to generate a 1-D mesh" << endl;
+            cout << "rectangle : Data to mesh a rectangle" << endl;
+            cout << "cube      : Data to mesh a cube (parallelepiped)" << endl;
+            cout << "point     : Define a point" << endl;
+            cout << "curve     : Define a curve" << endl;
+            cout << "surface   : Define a surface" << endl;
+            cout << "volume    : Define a volume" << endl;
+            cout << "contour   : Define a contour as a sequence of curves or surfaces" << endl;
+//   cout << "subdomain : Define a subdomain" << endl;
+            cout << "code      : Set code for points, lines, surfaces, volumes" << endl;
+            cout << "generate  : Generate mesh of a polygon" << endl;
+            cout << "list      : List mesh data" << endl;
+            cout << "plot      : Plot mesh" << endl;
+            cout << "clear     : Clear mesh" << endl;
+            cout << "read      : Read mesh from file" << endl;
+            cout << "save      : Save mesh in file" << endl;
+            break;
+
+         case 102:
+            _rita->getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            _verb = _configure->getVerbose();
+            break;
+
+         case 104:
+         case 105:
+            _rita->setParam();
+            break;
+
          case 106:
             if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                _rita->msg("print>","Missing data name.","",1);
@@ -164,7 +186,11 @@ int mesh::run()
             break;
 
          case 107:
+            _data->Summary();
+            break;
+
          case 108:
+         case 109:
             *_rita->ofh << "  end" << endl;
              _ret = 0;
             return _ret;
@@ -178,29 +204,6 @@ int mesh::run()
       }
    }
    return 1;
-}
-
-
-void mesh::getHelp()
-{
-   _cmd->setNbArg(0);
-   cout << "\nAvailable commands:" << endl;
-   cout << "1d        : Data to generate a 1-D mesh" << endl;
-   cout << "rectangle : Data to mesh a rectangle" << endl;
-   cout << "cube      : Data to mesh a cube (parallelepiped)" << endl;
-   cout << "point     : Define a point" << endl;
-   cout << "curve     : Define a curve" << endl;
-   cout << "surface   : Define a surface" << endl;
-   cout << "volume    : Define a volume" << endl;
-   cout << "contour   : Define a contour as a sequence of curves or surfaces" << endl;
-//   cout << "subdomain : Define a subdomain" << endl;
-   cout << "code      : Set code for points, lines, surfaces, volumes" << endl;
-   cout << "generate  : Generate mesh of a polygon" << endl;
-   cout << "list      : List mesh data" << endl;
-   cout << "plot      : Plot mesh" << endl;
-   cout << "clear     : Clear mesh" << endl;
-   cout << "read      : Read mesh from file" << endl;
-   cout << "save      : Save mesh in file" << endl;
 }
 
 
@@ -244,15 +247,6 @@ void mesh::set1D()
    _saved = false;
    _ret = 0;
    _generated = false;
-   const static string H = "1d [domain=m,M] [ne=n] [codes=c1,c2] [nbdof=d] [save=file]\n"
-                           "m, M: Extremal coordinates of interval ends. The default values are 0., 1.\n"
-                           "n: Number of elements in the interval. Its default value is 10.\n"
-                           "c1, c2: Codes associated to the first and the last node. These integer values\n"
-                           "        are necessary to enforce boundary conditions. A code 0 (Default value) means\n"
-                           "        no condition to prescribe.\n"
-                           "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n"
-                           "file: Name of the file where the generated mesh will be stored. By default the mesh \n"
-                           "      remains in memory but is not saved in file.";
    static const vector<string> kw {"domain","ne","codes","nbdof","save"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
@@ -262,7 +256,15 @@ void mesh::set1D()
 
          case 100:
          case 101:
-            cout << H << endl;
+            cout << "1d [domain=m,M] [ne=n] [codes=c1,c2] [nbdof=d] [save=file]\n"
+                    "m, M: Extremal coordinates of interval ends. The default values are 0., 1.\n"
+                    "n: Number of elements in the interval. Its default value is 10.\n"
+                    "c1, c2: Codes associated to the first and the last node. These integer values\n"
+                    "        are necessary to enforce boundary conditions. A code 0 (Default value) means\n"
+                    "        no condition to prescribe.\n"
+                    "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n"
+                    "file: Name of the file where the generated mesh will be stored. By default the mesh \n"
+                    "      remains in memory but is not saved in file." << endl << endl;
             _ret = 0;
             return;
 
@@ -359,26 +361,6 @@ void mesh::set1D()
             continue;
          switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
 
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable Commands:\n";
-               cout << "domain   : Enter xmin and xmax\n";
-               cout << "ne       : Enter number of elements to generate\n";
-               cout << "codes    : Codes to associate to end nodes\n";
-               cout << "nbdof    : Number of dof per node\n";
-               cout << "save     : Save generated 1-D mesh to file and return to higher level\n" << endl;
-               break;
-
-            case 102:
-               setConfigure();
-               return;
-
-            case 104:
-            case 105:
-                _rita->setParam();
-                break;
-
             case   0:
                if (_verb>1)
                   cout << "Setting interval bounds ..." << endl;
@@ -462,6 +444,31 @@ void mesh::set1D()
                }
                break;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands:\n";
+               cout << "domain   : Enter xmin and xmax\n";
+               cout << "ne       : Enter number of elements to generate\n";
+               cout << "codes    : Codes to associate to end nodes\n";
+               cout << "nbdof    : Number of dof per node\n";
+               cout << "save     : Save generated 1-D mesh to file and return to higher level\n" << endl;
+               break;
+
+            case 102:
+               _rita->getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               _verb = _configure->getVerbose();
+               break;
+
+            case 104:
+            case 105:
+               _rita->setParam();
+               break;
+
             case 106:
                if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                   _rita->msg("print>","Missing data name.","",1);
@@ -472,7 +479,11 @@ void mesh::set1D()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -536,12 +547,6 @@ void mesh::setRectangle()
    for (int i=0; i<nb_args; ++i) {
       int n = _cmd->getArgs(nb);
       switch (n) {
-
-         case  100:
-         case  101:
-            cout << H << endl;
-            _ret = 1;
-            return;
 
          case    0:
             if (nb==1) {
@@ -620,6 +625,12 @@ void mesh::setRectangle()
             _mesh_file = _cmd->string_token(0);
             break;
 
+         case  100:
+         case  101:
+            cout << H << endl;
+            _ret = 1;
+            return;
+
          default:
             _rita->msg("mesh>rectangle>","Unknown argument: "+kw[n]);
             return;
@@ -663,28 +674,6 @@ void mesh::setRectangle()
          if (_cmd->readline("rita>mesh>rectangle> ")<0)
             continue;
          switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
-
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable commands:\n";
-               cout << "min      : Values of xmin and ymin\n";
-               cout << "max      : Values of xmax and ymax\n";
-               cout << "ne       : Number of elements along x- and y-axes\n";
-               cout << "codes    : Code to assign to nodes (or sides if < 0) on boundary lines\n";
-               cout << "nbdof    : Number of dof per node\n";
-               cout << "save     : Save generated mesh to file and return to higher level\n";
-               cout << "end or < : go back to higher level" << endl;
-               break;
-
-            case 102:
-               setConfigure();
-               return;
-
-            case 104:
-            case 105:
-               _rita->setParam();
-               return;
 
             case   0:
                if (_verb>1)
@@ -794,6 +783,26 @@ void mesh::setRectangle()
                }
                break;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << H << endl;
+               break;
+
+            case 102:
+               _rita->getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               _verb = _configure->getVerbose();
+               break;
+
+            case 104:
+            case 105:
+               _rita->setParam();
+               break;
+
             case 106:
                if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                   _rita->msg("print>","Missing data name.","",1);
@@ -804,7 +813,11 @@ void mesh::setRectangle()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                *_rita->ofh << "    end" << endl;
@@ -1006,27 +1019,6 @@ void mesh::setCube()
             continue;
          switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
 
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable commands:\n";
-               cout << "min      : Values of xmin, ymin and zmin\n";
-               cout << "max      : Values of xmax, ymax and zmax\n";
-               cout << "ne       : Number of elements along x- y- and z-axes\n";
-               cout << "codes    : Codes to assign to nodes (or sides if < 0) on boundary faces\n";
-               cout << "nbdof    : Number of dof per node\n";
-               cout << "save     : Save generated mesh" << endl;
-               break;
-
-            case 102:
-               setConfigure();
-               break;
-
-            case 104:
-            case 105:
-               _rita->setParam();
-               break;
-
             case   0:
                if (_verb>1)
                   cout << "Setting xmin, ymin and zmin ..." << endl;
@@ -1125,6 +1117,26 @@ void mesh::setCube()
                _saved = true;
                break;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << H << endl;
+               break;
+
+            case 102:
+               _rita->getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               _verb = _configure->getVerbose();
+               break;
+
+            case 104:
+            case 105:
+               _rita->setParam();
+               break;
+
             case 106:
                if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                   _rita->msg("print>","Missing data name.","",1);
@@ -1135,7 +1147,11 @@ void mesh::setCube()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -1198,12 +1214,6 @@ void mesh::setCode()
    for (int i=0; i<nb_args; ++i) {
       int n = _cmd->getArgs(nb);
       switch (n) {
-
-         case 100:
-         case 101:
-            cout << H << endl;
-            _ret = 1;
-            return;
   
          case   0:
             c = _cmd->int_token(0);
@@ -1239,6 +1249,12 @@ void mesh::setCode()
                volumes.push_back(_cmd->int_token(j));
             volumes_ok++;
             break;
+
+         case 100:
+         case 101:
+            cout << H << endl;
+            _ret = 1;
+            return;
 
          default:
             _rita->msg("mesh>code>","Unknown argument: "+_kw[n]);
@@ -1314,7 +1330,7 @@ void mesh::setPoint()
    static const vector<string> kw {"label","n","coord","size"};
    static const string H = "point label=n coord=x,y,z size=h\n"
                            "n: Point's label\n"
-                           "x, y, z: Point coordinates. If y and/or z are not given, their value is set to 0?.\n"
+                           "x, y, z: Point coordinates. If y and/or z are not given, their value is set to 0?\n"
                            "This can be the case for 1-D and 2-D.\n"
                            "h: Mesh size around the point.";
    _cmd->set(kw,_rita->_gkw);
@@ -1322,12 +1338,6 @@ void mesh::setPoint()
    for (int i=0; i<nb_args; ++i) {
       int n = _cmd->getArgs(nb);
       switch (n) {
-
-         case 100:
-         case 101:
-            cout << H << endl;
-            _ret = 0;
-            return;
 
          case   0:
          case   1:
@@ -1366,6 +1376,12 @@ void mesh::setPoint()
                return;
             h_ok = true;
             break;
+
+         case 100:
+         case 101:
+            cout << H << endl;
+            _ret = 0;
+            return;
 
          default:
             _rita->msg("mesh>point>","Unknown argument: "+_kw[n]);
@@ -1452,12 +1468,6 @@ void mesh::setCurve()
       int n = _cmd->getArgs(nb);
       switch (n) {
 
-         case 100:
-         case 101:
-            cout << H << endl;
-            _ret = 0;
-            return;
-
          case   0:
          case   1:
             nn = _cmd->int_token(0);
@@ -1490,6 +1500,12 @@ void mesh::setCurve()
          case   4:
             del_ok = true;
             break;
+
+         case 100:
+         case 101:
+            cout << H << endl;
+            _ret = 0;
+            return;
 
          default:
             _rita->msg("mesh>curve>","Unknown argument: "+_kw[n]);
@@ -1612,12 +1628,6 @@ void mesh::setContour()
       int n = _cmd->getArgs(nb);
       switch (n) {
 
-         case 100:
-         case 101:
-            cout << H << endl;
-            _ret = 0;
-            return;
-
          case   0:
          case   1:
             nn = _cmd->int_token(0);
@@ -1639,6 +1649,12 @@ void mesh::setContour()
          case   4:
             del_ok++;
             break;
+
+         case 100:
+         case 101:
+            cout << H << endl;
+            _ret = 0;
+            return;
 
          default:
             _rita->msg("mesh>contour>","Unknown argument: "+_kw[n]);
@@ -1783,12 +1799,6 @@ void mesh::setSurface()
       int n = _cmd->getArgs(nb);
       switch (n) {
 
-         case 100:
-         case 101:
-            cout << H << endl;
-            _ret = 0;
-            return;
-
          case   0:
          case   1:
             nn = _cmd->int_token(0);
@@ -1804,6 +1814,12 @@ void mesh::setSurface()
          case   3:
             del_ok = true;
             break;
+
+         case 100:
+         case 101:
+            cout << H << endl;
+            _ret = 0;
+            return;
 
          default:
             _rita->msg("mesh>surface>","Unknown argument: "+_kw[n]);
@@ -1891,27 +1907,6 @@ void mesh::setSubDomain()
          continue;
       switch (_key=_cmd->getKW(kw)) {
 
-         case 100:
-         case 101:
-            _cmd->setNbArg(0);
-            cout << "\nAvailable Commands\n";
-            cout << "line        : Label for a line in subdomain\n";
-            cout << "orientation : Orientation\n";
-            cout << "code        : Code to associate to subdomain\n";
-            cout << "save        : Save subdomain" << endl;
-            break;
-
-         case 102:
-            if (_verb)
-               cout << "Setting configuration parameter(s) ..." << endl;
-            setConfigure();
-            break;
-
-         case 104:
-         case 105:
-             _rita->setParam();
-             break;
-
          case   0:
             if (_verb>1)
                cout << "Setting line ..." << endl;
@@ -1973,6 +1968,30 @@ void mesh::setSubDomain()
             *_rita->ofh << "    end" << endl;
             _ret = 0;
             return;
+
+         case 100:
+         case 101:
+            _cmd->setNbArg(0);
+            cout << "\nAvailable Commands\n";
+            cout << "line        : Label for a line in subdomain\n";
+            cout << "orientation : Orientation\n";
+            cout << "code        : Code to associate to subdomain\n";
+            cout << "save        : Save subdomain" << endl;
+            break;
+
+         case 102:
+            _rita->getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            _verb = _configure->getVerbose();
+            break;
+
+         case 104:
+         case 105:
+             _rita->setParam();
+             break;
 
          case 106:
             if (_cmd->setNbArg(1,"Data name to be given.",1)) {
@@ -2321,19 +2340,6 @@ void mesh::Read()
 
          switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
 
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable Commands\n";
-               cout << "mesh     : Read mesh in OFELI mesh file\n";
-               cout << "geo      : Read mesh in OFELI mesh file\n";
-               cout << "gmsh     : Read mesh in gmsh file" << endl;
-               break;
-
-            case 102:
-               setConfigure();
-               break;
-
             case   0:
                if (_cmd->setNbArg(1,"Give OFELI mesh file name.")) {
                   _rita->msg("mesh>read>mesh>","Missing Mesh file name.","",1);
@@ -2415,6 +2421,29 @@ void mesh::Read()
                _ret = 90;
                return;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands\n";
+               cout << "mesh     : Read mesh in OFELI mesh file\n";
+               cout << "geo      : Read mesh in OFELI mesh file\n";
+               cout << "gmsh     : Read mesh in gmsh file" << endl;
+               break;
+
+            case 102:
+               _rita->getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               _verb = _configure->getVerbose();
+               break;
+
+            case 104:
+            case 105:
+               _rita->setParam();
+                break;
+
             case 106:
                if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                   _rita->msg("print>","Missing data name.","",1);
@@ -2425,7 +2454,11 @@ void mesh::Read()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                _ret = 0;
                return;
 
@@ -2508,6 +2541,20 @@ void mesh::Save()
             if ((t=_cmd->string_token())!="")
                tecplot_f = t;
             tecplot_ok++;
+            break;
+
+         case 100:
+         case 101:
+            _cmd->setNbArg(0);
+               cout << "\nAvailable Commands\n";
+               cout << "domain:  Save domain file\n";
+               cout << "geo:     Save geo file\n";
+               cout << "mesh:    Save mesh in OFELI format\n";
+               cout << "gmsh:    Save mesh in gmsh format\n";
+               cout << "vtk:     Save mesh in vtk format\n";
+               cout << "gnuplot: Save mesh in gnuplot format\n";
+               cout << "matlab:  Save mesh in matlab format\n";
+               cout << "tecplot: Save mesh in tecplot format\n" << endl;
             break;
 
          default:

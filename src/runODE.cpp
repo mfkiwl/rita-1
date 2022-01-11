@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -214,26 +214,6 @@ int rita::runODE()
             continue;
          switch (key=_cmd->getKW(kw,_gkw)) {
 
-            case 100:
-            case 101:
-               _cmd->setNbArg(0);
-               cout << "\nAvailable Commands\n";
-               cout << "size:       Size of differential system: (Number of equations)\n";
-               cout << "function:   Give already defined function defining ode\n";
-               cout << "definition: Give expression defining ode\n";
-               cout << "variable:   Variable (or field) name as unknown of the equation\n";
-               cout << "initial:    Give an initial condition\n";
-               cout << "final-time: Give final time\n";
-               cout << "time-step:  Give time step\n";
-               cout << "scheme:     Time integration scheme\n";
-               cout << "summary:    Summary of ODE attributes\n";
-               cout << "clear:      Remove ODE from model\n" << endl;
-               break;
-
-            case 102:
-               _ret = _configure->run();
-               break;
-
             case   0:
                if (_cmd->setNbArg(1,"Size of differential system to be given.")) {
                   msg("ode>size>","Missing system size.","",1);
@@ -398,6 +378,30 @@ int rita::runODE()
                _ret = 10;
                return _ret;
 
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands\n";
+               cout << "size:       Size of differential system: (Number of equations)\n";
+               cout << "function:   Give already defined function defining ode\n";
+               cout << "definition: Give expression defining ode\n";
+               cout << "variable:   Variable (or field) name as unknown of the equation\n";
+               cout << "initial:    Give an initial condition\n";
+               cout << "final-time: Give final time\n";
+               cout << "time-step:  Give time step\n";
+               cout << "scheme:     Time integration scheme\n";
+               cout << "summary:    Summary of ODE attributes\n";
+               cout << "clear:      Remove ODE from model\n" << endl;
+               break;
+
+            case 102:
+               getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               break;
+
             case 104:
             case 105:
                setParam();
@@ -413,7 +417,11 @@ int rita::runODE()
                break;
 
             case 107:
+               _data->Summary();
+               break;
+
             case 108:
+            case 109:
                if (count_fct==0 && count_def==0) {
                   NO_ODE
                   *ofh << "  end" << endl;

@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -86,26 +86,6 @@ int rita::runPDE()
          continue;
       int key = _cmd->getKW(kw,_gkw);
       switch (key) {
-
-         case 100:
-         case 101:
-            cout << "\nAvailable Commands:\n";
-            cout << "field:  Field name of an unknown of the equation\n";
-            cout << "coef:   PDE coefficients\n";
-            cout << "axi:    Choose axisymmetric geometry\n";
-            cout << "init:   Set initial condition or guess for pde\n";
-            cout << "bc:     Set boundary conditions\n";
-            cout << "source: Set sources or body forces\n";
-            cout << "sf:     Set side (boundary) forces\n";
-            cout << "space:  Space discretization method\n";
-            cout << "ls:     Set linear system solver\n";
-            cout << "nls:    Set nonlinear system iteration procedure\n";
-            cout << "clear:  Remove pde from model\n" << endl;
-            break;
-
-         case 102:
-            _ret = _configure->run();
-            break;
 
          case   0:
             if (_cmd->setNbArg(1,"Give name of an associated field.")) {
@@ -211,6 +191,30 @@ int rita::runPDE()
             _ret = 10;
             return _ret;
 
+         case 100:
+         case 101:
+            cout << "\nAvailable Commands:\n";
+            cout << "field:  Field name of an unknown of the equation\n";
+            cout << "coef:   PDE coefficients\n";
+            cout << "axi:    Choose axisymmetric geometry\n";
+            cout << "init:   Set initial condition or guess for pde\n";
+            cout << "bc:     Set boundary conditions\n";
+            cout << "source: Set sources or body forces\n";
+            cout << "sf:     Set side (boundary) forces\n";
+            cout << "space:  Space discretization method\n";
+            cout << "ls:     Set linear system solver\n";
+            cout << "nls:    Set nonlinear system iteration procedure\n";
+            cout << "clear:  Remove pde from model\n" << endl;
+            break;
+
+         case 102:
+            getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            break;
+
          case 104:
          case 105:
             setParam();
@@ -226,7 +230,11 @@ int rita::runPDE()
             break;
 
          case 107:
+            _data->Summary();
+            break;
+
          case 108:
+         case 109:
            _cmd->setNbArg(0);
             if (_ret) {
                msg("pde>end>","No PDE data created.");

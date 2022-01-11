@@ -66,7 +66,7 @@
                            <ul>
                               <li class="active"><a href="#" data-nav-section="syntax">Syntax rules</a>
                               <li class="active"><a href="#" data-nav-section="set">Settings</a>
-                              <li class="active"><a href="#" data-nav-section="solver">Solver commands</a>
+                              <li class="active"><a href="#" data-nav-section="solver">Principal commands</a>
                               <ul>
                                 <li class="active"><a href="#" data-nav-section="data">data</a>
                                 <li class="active"><a href="#" data-nav-section="mesh">mesh</a>
@@ -211,7 +211,7 @@
                                                </ul>
                                                </section>
                                                <p></p>
-                                           <li> <section class="rita-text" data-section="solver"><h3>Solver commands</h3>
+                                           <li> <section class="rita-text" data-section="solver"><h3>Commands</h3>
                                                Here is the list of available solver commands:<br>
                                                <span class=var><a href="#data">data</a>,
                                                                <a href="#mesh">mesh</a>,
@@ -227,7 +227,8 @@
                                                                <a href="#calc">calc</a></span>.
                                                <ul>
                                                    <li><section class="rita-text" data-section="data"><p></p>
-                                                       <a name="data"></a>Command <span class=vvar>data</span> enables defining several types of data that can be used in solvers.
+                                                       <a name="data"></a>Command <span class=vvar>data</span>
+                                                       enables defining several types of data and entities that can be used in solvers.
                                                        Once this command is entered (without arguments) a submenu is available.
                                                        These types are: parameters, fields, functions, tabulations, grids, meshes. For these ones the following commands are available: 
                                                        <span class=var>parameter</span>, <span class=var>field</span>, <span class=var>function</span>, <span class=var>tabulation</span>, 
@@ -759,7 +760,7 @@
                                                                the unknowns are necessarily <span class=var>x1, x2, ...</span></li>
                                                            <li><span class=var>a</span>: String defining the used optimization method. This string is to pick in the following values:
                                                                <span class=var>gradient, truncated-newton, simulated annealing, nelder-mead, newton</span>. The default
-                                                               value of this parameter is <span class=var>grad</span>.</li>
+                                                               value of this parameter is <span class=var>gradient</span>.</li>
                                                        </ul>
                                                        It can be noticed that there is no way to impose other constraints than bound constraints in the short menu version. For this
                                                        one must resort to the extended version. 
@@ -776,7 +777,7 @@
                                                            <li><span class=var>objective&ensp;f</span><br>
                                                                <span class=var>f</span> is an expression defining the objective function to minimize.</li>
                                                            <li><span class=var>lp</span><br>
-                                                               This keyword is a toggle to say if we are dealing with the linear programming problem.
+                                                               This keyword is a toggle to say if we are dealing with a linear programming problem.
                                                                By default, we are considering a nonlinear objective function</li>
                                                            <li><span class=var>gradient&ensp;g1&ensp;g2&ensp;...</span><br>
                                                            <span class=var>g1, g2, ...</span> are the partial derivatives of the objective function defined analytically. By 
@@ -810,7 +811,7 @@
                                                                </ul>
                                                            </li>
                                                            <li><span class=var>eq-constraint&ensp;arg</span><br>
-                                                               The arguments of this keyword depend on the case whether we have a linear programming problem or not.
+                                                               The arguments of this keyword depend on the case wether we have a linear programming problem or not.
                                                                <ul>
                                                                    <li>In the linear programming case <span class=var>arg</span> is a list:<br>
                                                                <span class=var>v(1)&ensp;v(2)&ensp;...&ensp;v(n)&ensp;v(n+1)</span><br>
@@ -828,12 +829,13 @@
                                                                <span class=var>definition</span> is used. If the size of the system is greater than <span class=var>1</span>, 
                                                                the unknowns are necessarily <span class=var>x1, x2, ...</span></li>
                                                            <li><span class=var>initial&ensp;x1&ensp;x2&ensp;...</span><br>
+                                                               <span class=var>x1, x2, ...</span> are prescribed initial values of optimization variables.
                                                            </li>
                                                            <li><span class=var>algorithm&ensp;a</span><br>
                                                                <span class=var>a</span> is a string defining the used optimization method. This string is to pick in the 
                                                                following values:
                                                                <span class=var>gradient, truncated-newton, simulated annealing, nelder-mead, newton</span>. The default
-                                                               value of this parameter is <span class=var>grad</span>.</li>
+                                                               value of this parameter is <span class=var>gradient</span>.</li>
                                                            <li><span class=var>summary</span><br>
                                                                To display a summary of data of the optimization problem.</li>
                                                            <li><span class=var>clear</span><br>
@@ -1034,12 +1036,13 @@
                            <div class="row row-bottom-padded-sm animate-box" data-animate-effect="fadeInLeft">
                               <div class="col-md-12">
                                  <div class="start-desc">
-                                    <h2 class="rita-heading">Downloading and Installation</h2>
+                                    <h2 class="rita-heading">Downloading</h2>
                                      <p>The latest stable release of <span class=logo>rita</span> <span class=var>(1.0.2)</span> is available for download:
                                     <ul>
-                                       <li>Download compiled version for <a href="http://ofeli.org/rita/releases/rita-1.0.2-MacOSX.tar.gz">Mac OS</a>,
-                                                                         <a href="http://ofeli.org/rita/releases/rita-1.0.2-Linux64.tar.gz">Linux 64-bit</a>,
-                                                                         <a href="http://ofeli.org/rita/releases/rita-1.0.2-Linux32.tar.gz">Linux 32-bit</a>
+                                       <li>Download compiled version for <a href="http://ofeli.org/rita/releases/rita-1.2.0-MacOSX.tar.gz">Mac OS</a>,
+                                                                         <a href="http://ofeli.org/rita/releases/rita-1.2.0-Linux64.tar.gz">Linux 64-bit</a>,
+                                                                         <a href="http://ofeli.org/rita/releases/rita-1.2.0-Linux32.tar.gz">Linux 32-bit</a>
+                                       <li>Download source code <a href="http://ofeli.org/rita/releases/rita-1.2.0-src.tar.gz">rita-1.2.0-src.tar.gz</a>
                                        <li>Old releases:
                                            <ul>
                                               <li>rita-1.0.1 for <a href="http://ofeli.org/rita/releases/rita-1.0.1-MacOSX.tar.gz">Mac OS</a>,
@@ -1051,6 +1054,52 @@
                                            </ul>
                                         </p>
                                         <li>Download <a href="http://ofeli.org/rita/releases/rita-1.0.2-src.tar.gz">source code</a>
+                                    </ul>
+                                    <h2 class="rita-heading">Installation Procedure</h2>
+                                        <p><span class=logo>rita</span> can be installed using its compiled version. For this, once the downloaded files
+                                        is unpacked, you can follow the intallation script or copy manully the files.<br>
+                                        Let us describe the installation procedure using the source files.</p>
+                                        <p><b>WARNING:</b>
+                                            <ul>
+                                                <li> Before installing check that the libraries <a href="http://ofeli.org">
+                                                     ofeli</a> and <a href="http://gmsh.info">gmsh</a> are installed correctly.
+                                                <li>The installation procedure uses <span class=var>cmake</span>.
+                                                    If you don't have <span class=var>cmake</span> or don't want to
+                                                    install it, you can download the compiled version according to you operating system.</li>
+                                            </ul>
+                                        </p>
+                                        <p>After unpacking the <span class=logo>rita</span> package file, let's go to the created
+                                        directory (where the file <span class=var>INSTALL</span> is).
+                                        You now have to create a directory, which we will call <span class=var>build</span> for instance.<br>
+                                        Type:
+                                        </p>
+                                        <ul style="list-style-type:none">
+                                            <li><span class=var>cd build</span></li>
+                                            <li><span class=var>cmake ..</span></li>
+                                            <li><span class=var>cmake --build .</span></li>
+                                        </ul>
+                                        
+                                        <p>This creates the executable file <span class=var>rita</span> in the subdirectory 
+                                        <span class=var>src</span>.<br>
+                                        You can now run the tests by typing
+                                        <ul style="list-style-type:none">
+                                            <li><span class=var>ctest</span></li>
+                                        </ul>
+                                        <p>All tests are run. If you prefer to display test outputs, type
+                                        
+                                        <ul style="list-style-type:none">
+                                            <li><span class=var>ctest --verbose</span></li>
+                                        </ul>
+                                        <p>Now, everything is ready (if tests are run successfully). You can install the application on your
+                                        computer by typing
+                                        <ul style="list-style-type:none">
+                                           <li><span class=var>make install</span></li>
+                                        </ul> 
+                                        <p>This command may require administrator privileges.<br>
+                                        You can adjust the installation destination (the "prefix")
+                                        by passing the <span class=var>-DCMAKE_INSTALL_PREFIX=myprefix</span> option to c
+                                        <span class=var>make</span>, as is explained in the message that cmake prints at the end.
+                                        </p>
                                   </div>
                               </div>
                            </div>

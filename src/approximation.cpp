@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -22,7 +22,7 @@
 
   ==============================================================================
 
-                      Implementation of class 'approx'
+                    Implementation of class 'approximation'
 
   ==============================================================================*/
 
@@ -52,7 +52,7 @@ int approximation::run()
 {
    _rita->_analysis_type = APPROXIMATION;
    string file="", name="";
-   int nb=0, nb_tab=0;
+   int nb=0;
    int file_count=0, lagrange_count=0, bspline_count=0, fitting_count=0, bezier_count=0;
    int nurbs_count=0, approx_count=0;
    static const vector<string> kw {"file","name","lagrange","piecewise$_lagrange","hermite",
@@ -70,7 +70,7 @@ int approximation::run()
 
          case 0:
             file = _cmd->string_token(0);
-            nb_tab = 1;
+	    //            nb_tab = 1;
             file_count++;
             break;
 

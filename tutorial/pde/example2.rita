@@ -18,9 +18,7 @@ stationary
 # We now declare the pde to solve: The Laplace equation,
 # The unknown is u
 # We next impose Dirichlet boundary conditions and a source term
-# Space discretization uses the P1 finite element method
 pde laplace
-
   field u
 
 # Dirichlet boundary condition
@@ -37,7 +35,7 @@ pde laplace
 solve
   save file=example2.pos
   run
- Set analytical solution to compute error
-  analytic  definition=sin(pi*x)*exp(y)
+# Set analytical solution to compute error
+  analytic definition=sin(pi*x)*exp(y)
   error
 exit

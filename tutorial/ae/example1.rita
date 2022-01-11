@@ -4,7 +4,7 @@
 # We declare the unknown x as a variable
 # The default iterative method is the Newton's method
 #
-algebraic var=x def=x^2-2 init=1.
+algebraic var=y def=y^2-2
 solve
   run
 #

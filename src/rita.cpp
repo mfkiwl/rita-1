@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -157,7 +157,7 @@ int rita::run()
 {
    static const vector<string> kw {"load","unload","calc$ulator","data","mesh","stat$ionary","trans$ient",
                                    "eigen","optim","approx$imation","integ$ration","algebraic","ode","pde",
-                                   "summary","solve","clear"};
+                                   "solve","clear"};
    int key = 0;
    string fn="";
    while (1) {
@@ -165,21 +165,6 @@ int rita::run()
          continue;
       _nb_args = _cmd->getNbArgs();
       switch (key=_cmd->getKW(kw,_gkw)) {
-
-         case 100:
-         case 101:
-            _help->setVerbose(_verb);
-            _help->run();
-            break;
-
-         case 102:
-            getLicense();
-            break;
-
-         case 103:
-            _ret = _configure->run();
-            _verb = _configure->getVerbose();
-            break;
 
          case   0:
             Load();
@@ -252,15 +237,26 @@ int rita::run()
             break;
 
          case  14:
-            setSummary();
-            break;
-
-         case  15:
             setSolve();
             break;
 
-         case  16:
+         case  15:
             setClear();
+            break;
+
+         case 100:
+         case 101:
+            _help->setVerbose(_verb);
+            _help->run();
+            break;
+
+         case 102:
+            getLicense();
+            break;
+
+         case 103:
+            _ret = _configure->run();
+            _verb = _configure->getVerbose();
             break;
 
          case 104:
@@ -278,15 +274,19 @@ int rita::run()
             break;
 
          case 107:
+            _data->Summary();
+            break;
+
          case 108:
+         case 109:
             break;
 
          default:
             msg("","Unknown command: "+_cmd->token(),
-                "Available commands: license, load, unload, calc, data, parameter, mesh, stationary, transient\n"
+                "Available commands: license, load, unload, calc, data, mesh, stationary, transient\n"
                 "                    eigen, optim, approximation, integration, algebraic, ode, pde\n"
-                "                    summary, solve, clear\n"
-                "Global commands:    help, ?, set, parameter, print, quit, exit");
+                "                    solve\n"
+                "Global commands:    help, ?, set, parameter, print, summary, quit, exit");
             break;
       }
    }
@@ -375,9 +375,11 @@ void rita::setData()
 void rita::setParam()
 {
    int verb = 1;
-   if (_verb>1)
-      cout << "Entering module 'parameter' ..." << endl;
    string_type ln = _cmd->mp();
+   if (ln=="") {
+      msg("param>","No given parameter.");
+      return;
+   }
    *ofh << "parameter " << ln << endl;
    if (ln[ln.size()-1]==';') {
       verb = 0;
@@ -422,6 +424,7 @@ void rita::setStationary()
 
 void rita::setTransient()
 {
+   string fn="";
    int ret = 0;
    _analysis_type = TRANSIENT;
    _scheme = "backward-euler";
@@ -521,22 +524,6 @@ void rita::setTransient()
          int key = 0;
          switch (key=_cmd->getKW(kw,_gkw)) {
 
-            case 100:
-            case 101:
-               cout << "\nAvailable Commands:\n";
-               cout << "initial-time: Initial time value (Default = 0.)\n";
-               cout << "final-time:   Final time value (Default = 1.)\n";
-               cout << "time-step:    Time step (Default = 0.1, < 0: Adapted)\n";
-               cout << "scheme:       Time integration scheme (Default = backward-euler)\n";
-               cout << "              Available schemes: forward-euler, backward-euler, crank-nicolson, heun,\n";
-               cout << "                                 newmark, leap-frog, AB2, RK4, RK3-TVD, BDF2, builtin\n";
-               cout << "end or <:     back to higher level" << endl;
-               break;
-
-            case 102:
-               _ret = _configure->run();
-               return;
-
             case   0:
                if (_cmd->setNbArg(1,"Initial time to be given.")) {
                   msg("transient>initial-time>","Missing initial time value.","",1);
@@ -583,8 +570,47 @@ void rita::setTransient()
                *ofh << "  scheme " << _scheme << endl;
                break;
 
+            case 100:
+            case 101:
+               cout << "\nAvailable Commands:\n";
+               cout << "initial-time: Initial time value (Default = 0.)\n";
+               cout << "final-time:   Final time value (Default = 1.)\n";
+               cout << "time-step:    Time step (Default = 0.1, < 0: Adapted)\n";
+               cout << "scheme:       Time integration scheme (Default = backward-euler)\n";
+               cout << "              Available schemes: forward-euler, backward-euler, crank-nicolson, heun,\n";
+               cout << "                                 newmark, leap-frog, AB2, RK4, RK3-TVD, BDF2, builtin\n";
+               cout << "end or <:     back to higher level" << endl;
+               break;
+
+            case 102:
+               getLicense();
+               break;
+
+            case 103:
+               _ret = _configure->run();
+               _verb = _configure->getVerbose();
+               break;
+
+            case 104:
+            case 105:
+               setParam();
+               break;
+
             case 106:
+               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+                  msg("print>","Missing data name.","",1);
+                  break;
+               }
+               if (!_cmd->get(fn))
+                  _data->print(fn);
+               break;
+
             case 107:
+               _data->Summary();
+               break;
+
+            case 108:
+            case 109:
                *ofh << "  end" << endl;
                _analysis_type = TRANSIENT;
                _time_step = ts;
@@ -604,7 +630,7 @@ void rita::setTransient()
             default:
                msg("transient>","Unknown command "+_cmd->token(),
                    "Available commands: initial-time, final-time, time-step, scheme, end, <\n"
-                   "Global commands:    help, ?, set, quit, exit");
+                   "Global commands:    help, ?, set, parameter, print, summary, quit, exit");
                break;
          }
       }
@@ -712,35 +738,6 @@ int rita::set_ls(string ls,
       return 1;
    }
    return 0;
-}
-
-
-void rita::setSummary()
-{
-   cout << "\nSUMMARY:" << endl;
-   cout << "---------------------------------------------------------------" << endl;
-   cout << "MODEL ANALYSIS" << endl;
-   if (_analysis_type == STEADY_STATE)
-      cout << "Analysis is steady-state." << endl;
-   else if (_analysis_type == TRANSIENT) {
-      cout << "Analysis is transient." << endl;
-      cout << "Initial time: " << _init_time << endl;
-      cout << "Final time: " << _final_time << endl;
-      cout << "Time step: " << _time_step << endl;
-      cout << "Adapted time step ? " << _adapted_time_step << endl;
-      cout << "Time integration scheme: " << _scheme << endl;
-   }
-   else if (_analysis_type == EIGEN) {
-      cout << "Analysis is an eigenproblem analysis." << endl;
-      cout << "Number of eigenvalues to extract: " << _nb_eigv << endl;
-      cout << "Extract eigenvectors ? " << _eigen_vectors << endl;
-   }
-   else if (_analysis_type == OPTIMIZATION) {
-      cout << "Analysis is optimization." << endl;
-      //      cout << "Type of objective function: " << objective_type << endl;
-      //      cout << "Optimization algorithm: " << opt_alg << endl;
-   }
-   cout << "---------------------------------------------------------------" << endl;
 }
 
 

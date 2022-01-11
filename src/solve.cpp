@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -107,28 +107,6 @@ int solve::run()
          continue;
       switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
 
-         case 100:
-         case 101:
-            _cmd->setNbArg(0);
-            cout << "\nAvailable Commands:\n";
-            cout << "select:   Select equation (or system of equations) to solve (Default: last defined equation)\n";
-            cout << "run:      Run the model\n";
-            cout << "save:     Save output, can be executed before run\n";
-            cout << "display:  Print solution and related data\n";
-            cout << "plot:     Plot solution\n";
-            cout << "analytic: Give analytic solution to test accuracy\n";
-            cout << "error:    Compute error in various norms\n";
-            cout << "post:     Post calculations" << endl;
-            break;
-
-         case 102:
-            if (_verb)
-               cout << "Setting configuration parameter(s) ..." << endl;
-            _configure->setVerbose(_verb);
-            _configure->run();
-            _verb = _configure->getVerbose();
-            break;
-
          case   0:
             if (_cmd->setNbArg(1)==0)
                _ret = _cmd->get(eq);
@@ -202,6 +180,32 @@ int solve::run()
             *_rita->ofh << "  post" << endl;
             break;
 
+         case 100:
+         case 101:
+            _cmd->setNbArg(0);
+            cout << "\nAvailable Commands:\n";
+            cout << "select:   Select equation (or system of equations) to solve (Default: last defined equation)\n";
+            cout << "run:      Run the model\n";
+            cout << "save:     Save output, can be executed before run\n";
+            cout << "display:  Print solution and related data\n";
+            cout << "plot:     Plot solution\n";
+            cout << "analytic: Give analytic solution to test accuracy\n";
+            cout << "error:    Compute error in various norms\n";
+            cout << "post:     Post calculations" << endl;
+            break;
+
+         case 102:
+            _rita->getLicense();
+            break;
+
+         case 103:
+            if (_verb)
+               cout << "Setting configuration parameter(s) ..." << endl;
+            _configure->setVerbose(_verb);
+            _configure->run();
+            _verb = _configure->getVerbose();
+            break;
+
          case 104:
          case 105:
             _rita->setParam();
@@ -217,7 +221,11 @@ int solve::run()
             break;
 
          case 107:
+            _data->Summary();
+            break;
+
          case 108:
+         case 109:
             if (_verb>1)
                cout << "Getting back to higher level ..." << endl;
             *_rita->ofh << "  end" << endl;

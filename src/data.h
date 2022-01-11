@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -91,7 +91,8 @@ class data
     int getNbEq() const { return nb_ae+nb_ode+nb_pde; }
     void setTab2Grid(OFELI::Tabulation* tab);
     void setTab2Field(OFELI::Tabulation* tab);
-
+    void Summary();
+  
     int nb_fields, nb_fcts, nb_tabs, nb_meshes, nb_grids, nb_params, nb_vectors, nb_matrices;
     int nb_pde, nb_ode, nb_ae, nb_opt, nb_int, nb_eigen, nb_eq;
     vector<int> nb_dof;
@@ -140,7 +141,6 @@ class data
     int setNbDOF();
 
     int setConfigure();
-    int setParam();
     int setVector();
     int setMatrix();
     int setGrid();
@@ -160,7 +160,6 @@ class data
     void ListAE(int opt);
     void ListODE(int opt);
     void ListPDE(int opt);
-    void Summary();
     vector<double> _xv;
 };
 

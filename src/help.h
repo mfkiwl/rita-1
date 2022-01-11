@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -60,15 +60,16 @@ string H1 =  "rita is an interactive application to solve modelling problems inv
              "eigen         Set problem as an eigenproblem (Not yet implemented)\n"
              "approximation Define data approoximation: interpolation, fitting, ...\n"
              "solve         Run the constructed problem with all chosen options\n"
-             "license       Print License Agreement of the software\n\n"
              "Global commands are commands that are available in all modes. These are:\n"
              "set           Modify configuration parameters for the present and future sessions\n"
+             "license       Print License Agreement of the software\n\n"
              "help or ?     Display a help corresponding to current mode\n"
              "!             To execute a shell command, this one must be typed preceded by this mark\n"
              "end or <      Go back to higher level: Enables quiting a mode. Some commands in modes however\n"
-             "              do this automatically.\n"
-             "#             At beginning of script line: Set as comment line"
+             "              do this automatically\n"
+             "#             At beginning of script line: Set as comment line\n"
              "param or @    Define a parameter\n"
+             "summary       print information on defined entities\n"
              "print         Output an entity (function, field, mesh, ...\n"
              "exit          exit the program.\n";
 

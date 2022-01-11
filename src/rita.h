@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -189,7 +189,6 @@ class rita
    void setApproximation();
    void setIntegration();
    void setPDE();
-   void setSummary();
    void setClear();
    void setMesh(OFELI::Mesh* ms);
    void setSolve();
@@ -198,7 +197,7 @@ class rita
    int findField(const string& s);
    void msg(const string& loc, const string& m1, const string& m2="", int c=0);
 
-   const vector<string> _gkw {"?","help","lic$ense","set","par$ameter","@","print","end","<"};
+   const vector<string> _gkw {"?","help","lic$ense","set","par$ameter","@","print","summary","end","<"};
    map<string,OFELI::Iteration> Ls = {{"direct",OFELI::DIRECT_SOLVER},
                                       {"cg",OFELI::CG_SOLVER},
                                       {"cgs",OFELI::CGS_SOLVER},

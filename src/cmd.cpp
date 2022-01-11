@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -123,7 +123,10 @@ int cmd::readline(string p)
       _word.push_back(token);
    }
    _ind = 0;
+   _mup = "";
    if (_word[0].substr(0,5)=="param" || _word[0].substr(0,1)=="@") {
+      if (_word[0].size()>=_buffer.size())
+         return 1;
       _mup = _buffer.substr(_word[0].size()+1,_buffer.size());
       return 0;
    }

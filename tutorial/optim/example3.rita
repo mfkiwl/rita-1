@@ -1,5 +1,5 @@
 # rita Script file to solve a constrained optimization problem
-# We numerically solve an optimal design of a four bar truss:
+# We numerically look for an optimal design of a four bar truss:
 #
 optim
   size 2

@@ -1,11 +1,37 @@
-INSTALLING RITA
-Run:
-$ ./configure --with-gmsh
-$ make
-# make install
+INSTALLATION PROCEDURE FOR RITA
+
+Warning:
+1. Before installing check that the libraries ofeli and gmsh are installed correctly.
+2. The installation procedure uses cmake. If you don't hacve cmake or don't want to
+install it, you can download the compiled version according to you operating system. 
 
 
-UNINSTALLING
-For uninstalling, run:
-# make uninstall
-from the top folder of this package
+After unzipping and untarring the rita package file, let's go to the created
+directory (where the file INSTALL is).
+You now have to create a directory, which we will call 'build'.
+
+Do:
+
+  cd build
+  cmake ..
+  cmake --build .
+
+This creates the executable file 'rita' in the subdirectory 'src'.
+You can now run the tests by typing
+
+ctest
+
+All tests are run. If you prefer to display test outputs, type
+
+ctest --verbose
+
+Now, everything is ready (if tests are run successfully). You can install the application on your
+computer by typing 
+
+make install
+
+This command may require administrator privileges.
+
+You can adjust the installation destination (the "prefix")
+by passing the -DCMAKE_INSTALL_PREFIX=myprefix option to cmake, as is
+explained in the message that cmake prints at the end.

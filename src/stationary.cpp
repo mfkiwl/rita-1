@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 Rachid Touzani
+    Copyright (C) 2021 - 2022 Rachid Touzani
 
     This file is part of rita.
 
@@ -173,7 +173,6 @@ int stationary::run()
             }
             _pde_eq->theEquation->setInput(BOUNDARY_FORCE,_pde_eq->sf);
          }
-
          ret = _pde_eq->theEquation->run();
 
          for (int i=0; i<_pde_eq->nb_fields; ++i) {
