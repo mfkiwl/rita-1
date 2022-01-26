@@ -475,7 +475,6 @@ int optim::run()
                _ret = _cmd->get(str);
                le_cons.push_back(str);
                count_lec++;
-cout<<"-> "<<size<<"  "<<le_cons[0]<<endl;
                break;
 
             case  10:

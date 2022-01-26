@@ -52,17 +52,13 @@ int approximation::run()
 {
    _rita->_analysis_type = APPROXIMATION;
    string file="", name="";
-   int nb=0;
+   int nb=0, key=0;
    int file_count=0, lagrange_count=0, bspline_count=0, fitting_count=0, bezier_count=0;
    int nurbs_count=0, approx_count=0;
-   static const vector<string> kw {"file","name","lagrange","piecewise$_lagrange","hermite",
+   static const vector<string> kw {"file","name","lagrange","piecewise$-lagrange","hermite",
                                    "fitting","bspline","bezier","nurbs"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
-   if (nb_args<1) {
-      _rita->msg("approximation>","No argument for command.");
-      return 1;
-   }
    for (int k=0; k<nb_args; ++k) {
 
       int n = _cmd->getArgs(nb);
@@ -142,100 +138,128 @@ int approximation::run()
       _tab = new OFELI::Tabulation(file);
       _data->addTab(_tab,name);
    }
-   /*   else {
-      *_ofh << "approximation " << endl;
+   else {
+      *_rita->ofh << "approximation " << endl;
       while (1) {
-      if (_cmd->readline("approximation> ")<0)
-         continue;
-      switch (_key=_cmd->getKW(_kw_approx)) {
+         if (_cmd->readline("approximation> ")<0)
+            continue;
+         switch (key=_cmd->getKW(kw,_rita->_gkw)) {
 
-         case 0:
-         case 1:
-            _cmd->setNbArg(0);
-            cout << "\nAvailable Commands:\n";
-            cout << "file:         File containing tabulated data to approximate\n";
-            cout << "name:         "
-            cout << "lagrange:     \n";
-            cout << "fitting:     Least Square fitting\n";
-            cout << "bspline";
-            cout << "bezier";
-            cout << "nurbs";
-            cout << "summary:      Summary of approximation problem attributes\n";
-            cout << "clear:        Remove problem\n";
-            cout << "end or <:     go back to higher level" << endl;
-            break;
-
-         case 2:
-            setConfigure();
-            break;
-
-         case 3:
-            if (!_cmd->get(size))
-               *_ofh << "    size " << size << endl;
-            _ret = 0;
-            break;
-
-         case 4:
-            _ret = 0;
-            break;
-
-         case 5:
-            _ret = 0;
-            break;
-
-         case 7:
-            break;
-
-         case 8:
-            _ret = 0;
-            break;
-
-         case 9:
-            break;
-
-         case 11:
-            cout << "Summary of optimization problem attributes:\n";
-            *_ofh << "      summary" << endl;
-            _ret = 0;
-            break;
-
-         case 13:
-         case 14:
-            _cmd->setNbArg(0);
-            if (fct_ok<size) {
-               cout << "Error: Insufficient number of functions defining system." << endl;
-               *_ofl << "In optimization>end>: Insufficient number of functions defining system." << endl;
+            case 100:
+            case 101:
+               _cmd->setNbArg(0);
+               cout << "\nAvailable Commands:\n";
+               cout << "file:               File containing tabulated data to approximate\n";
+               cout << "name:         \n";
+               cout << "lagrange:           Lagrange interpolation\n";
+               cout << "piecewise-lagrange: Piecewise Lagrange interpolation\n";
+               cout << "fitting:            Least Square fitting\n";
+               cout << "bspline:            \n";
+               cout << "bezier\n";
+               cout << "nurbs\n";
+               cout << "summary:            Summary of approximation problem attributes\n";
+               cout << "clear:              Remove problem\n";
+               cout << "end or <:           go back to higher level" << endl;
                break;
-            }
-            if (field_ok==0) {
-               cout << "Error: No field defined for optimization problem." << endl;
-               *_ofl << "In optimization>end>: No field defined for optimization problem." << endl;
+
+            case 102:
+               _rita->getLicense();
                break;
-            }
-            *_ofh << "      end" << endl;
-            _ret = 0;
-            return;
 
-         case 15:
-         case 16:
-            _ret = 100;
-            return;
+            case 103:
+               _rita->_ret = _rita->_configure->run();
+               break;
 
-         case -2:
-         case -3:
-         case -4:
-            break;
+            case 104:
+            case 105:
+               _rita->setParam();
+               break;
 
-         default:
-            cout << "Unknown Command: " << _cmd->token() << endl;
-            cout << "Available commands: size, objective, gradient, hessian, constraint, init, field, algorithm" << endl;
-	    cout << "                    summary, clear, end, <" << endl;
-            cout << "Global commands:    help, ?, set, quit, exit" << endl;
-            *_ofl << "In optimization>: Unknown Command " << _cmd->token() << endl;
-         break;
+            case 106:
+               break;
+
+            case 107:
+               _data->Summary();
+               break;
+
+            case 108:
+            case 109:
+               if (approx_count>1) {
+                  _rita->msg("approximation>","More than one approximation method given.");
+                  return 1;
+               }
+               if (file_count==0) {
+                  _rita->msg("approximation>","No data file given.");
+                  _rita->_ret = 0;
+                  return 1;
+               }
+               else
+                  _tab = new OFELI::Tabulation(file);
+               _data->addTab(_tab,name);
+               _rita->_ret = 0;
+               return 0;
+
+            case -2:
+            case -3:
+            case -4:
+               break;
+
+            case  0:
+               if (!_cmd->get(file)) {
+                  *_rita->ofh << "  file " << file << endl;
+                  file_count++;
+               }
+               break;
+
+            case  1:
+               if (!_cmd->get(name)) {
+                  *_rita->ofh << "  name " << name << endl;
+                  file_count++;
+               }
+               break;
+
+            case 2:
+               if (!_cmd->get(_lagrange_degree)) {
+                  lagrange_count++, approx_count++;
+                  *_rita->ofh << "  lagrange " << _lagrange_degree << endl;
+                  _method = LAGRANGE;
+               }
+               break;
+
+            case 3:
+               approx_count++;
+               _method = PIECEWISE_LAGRANGE;
+               _rita->_ret = 0;
+               break;
+
+            case 4:
+               _rita->_ret = 0;
+               break;
+
+            case 5:
+               _rita->_ret = 0;
+               break;
+
+            case 7:
+               break;
+
+            case 8:
+               _rita->_ret = 0;
+               break;
+
+            case 9:
+               break;
+
+            default:
+               cout << "Unknown Command: " << _cmd->token() << endl;
+               cout << "Available commands: file, name, lagrange, piecewise-lagrange, hermite, fitting, bspline" << endl;
+               cout << "                    bezier, nurbs, summary, clear, end, <" << endl;
+               cout << "Global commands:    help, ?, set, quit, exit" << endl;
+               break;
+         }
       }
    }
-   _ret = 0;*/
+   _rita->_ret = 0;
    return 0;
 }
 

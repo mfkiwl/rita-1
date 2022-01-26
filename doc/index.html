@@ -1011,7 +1011,7 @@
                                  <div class="start-desc">
                                     <h2 class="rita-heading">RITA License</h2>
                                     <p><span class=logo>rita</span> is freely available under the GPL (Gnu Public License).<br>
-                                       Copyright &copy; 2021 Rachid Touzani</p>
+                                       Copyright &copy; 2021-2022 Rachid Touzani</p>
                                     <p><span class=TEXT><span class=logo>rita</span> is free software: you can redistribute it and/or modify
                                        it under the terms of the GNU General Public License as published by
                                        the Free Software Foundation, either version 3 of the License, or
@@ -1037,36 +1037,33 @@
                               <div class="col-md-12">
                                  <div class="start-desc">
                                     <h2 class="rita-heading">Downloading</h2>
-                                     <p>The latest stable release of <span class=logo>rita</span> <span class=var>(1.0.2)</span> is available for download:
+                                     <p>The latest stable release of <span class=logo>rita</span> <span class=var>(1.2.0)</span> is available for download:
                                     <ul>
                                        <li>Download compiled version for <a href="http://ofeli.org/rita/releases/rita-1.2.0-MacOSX.tar.gz">Mac OS</a>,
-                                                                         <a href="http://ofeli.org/rita/releases/rita-1.2.0-Linux64.tar.gz">Linux 64-bit</a>,
-                                                                         <a href="http://ofeli.org/rita/releases/rita-1.2.0-Linux32.tar.gz">Linux 32-bit</a>
+                                                                         <a href="http://ofeli.org/rita/releases/rita-1.2.0-Linux64.tar.gz">Linux 64-bit</a>
                                        <li>Download source code <a href="http://ofeli.org/rita/releases/rita-1.2.0-src.tar.gz">rita-1.2.0-src.tar.gz</a>
                                        <li>Old releases:
                                            <ul>
                                               <li>rita-1.0.1 for <a href="http://ofeli.org/rita/releases/rita-1.0.1-MacOSX.tar.gz">Mac OS</a>,
-                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.1-Linux64.tar.gz">Linux 64-bit</a>,
-                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.1-Linux32.tar.gz">Linux 32-bit</a>
+                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.1-Linux64.tar.gz">Linux 64-bit</a>
                                               <li>rita-1.0.0 for <a href="http://ofeli.org/rita/releases/rita-1.0.0-MacOSX.tar.gz">Mac OS</a>,
-                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.0-Linux64.tar.gz">Linux 64-bit</a>,
-                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.0-Linux32.tar.gz">Linux 32-bit</a>
+                                                                 <a href="http://ofeli.org/rita/releases/rita-1.0.0-Linux64.tar.gz">Linux 64-bit</a>
                                            </ul>
                                         </p>
                                         <li>Download <a href="http://ofeli.org/rita/releases/rita-1.0.2-src.tar.gz">source code</a>
                                     </ul>
                                     <h2 class="rita-heading">Installation Procedure</h2>
-                                        <p><span class=logo>rita</span> can be installed using its compiled version. For this, once the downloaded files
+                                        <p><span class=logo>rita</span> can be installed using its compiled version. For this, once the downloaded file
                                         is unpacked, you can follow the intallation script or copy manully the files.<br>
                                         Let us describe the installation procedure using the source files.</p>
                                         <p><b>WARNING:</b>
-                                            <ul>
-                                                <li> Before installing check that the libraries <a href="http://ofeli.org">
-                                                     ofeli</a> and <a href="http://gmsh.info">gmsh</a> are installed correctly.
-                                                <li>The installation procedure uses <span class=var>cmake</span>.
-                                                    If you don't have <span class=var>cmake</span> or don't want to
-                                                    install it, you can download the compiled version according to you operating system.</li>
-                                            </ul>
+                                           <ul>
+                                              <li> Before installing check that the libraries <a href="http://ofeli.org">
+                                                   ofeli</a> and <a href="http://gmsh.info">gmsh</a> are installed correctly.
+                                              <li>The installation procedure uses <span class=var>cmake</span>.
+                                                  If you don't have <span class=var>cmake</span> or don't want to
+                                                  install it, you can download the compiled version according to you operating system.</li>
+                                           </ul>
                                         </p>
                                         <p>After unpacking the <span class=logo>rita</span> package file, let's go to the created
                                         directory (where the file <span class=var>INSTALL</span> is).
@@ -1081,24 +1078,23 @@
                                         
                                         <p>This creates the executable file <span class=var>rita</span> in the subdirectory 
                                         <span class=var>src</span>.<br>
-                                        You can now run the tests by typing
+                                        You can now run the tests by typing</p>
                                         <ul style="list-style-type:none">
                                             <li><span class=var>ctest</span></li>
                                         </ul>
-                                        <p>All tests are run. If you prefer to display test outputs, type
-                                        
+                                        <p>All tests are run. If you prefer to display test outputs, type</p>
                                         <ul style="list-style-type:none">
                                             <li><span class=var>ctest --verbose</span></li>
                                         </ul>
                                         <p>Now, everything is ready (if tests are run successfully). You can install the application on your
-                                        computer by typing
+                                        computer by typing</p>
                                         <ul style="list-style-type:none">
                                            <li><span class=var>make install</span></li>
                                         </ul> 
                                         <p>This command may require administrator privileges.<br>
                                         You can adjust the installation destination (the "prefix")
-                                        by passing the <span class=var>-DCMAKE_INSTALL_PREFIX=myprefix</span> option to c
-                                        <span class=var>make</span>, as is explained in the message that cmake prints at the end.
+                                        by passing the <span class=var>-DCMAKE_INSTALL_PREFIX=myprefix</span> option to
+                                        <span class=var>cmake</span>, as is explained in the message that <span class=var>cmake</span> prints at the end.
                                         </p>
                                   </div>
                               </div>

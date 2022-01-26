@@ -26,14 +26,14 @@ project (approximation)
 
 file (COPY example1.rita example2.rita ex1.dat ex2.dat DESTINATION .)
 
-add_test (approximation-1 ${CMAKE_RITA_EXEC} example1.rita)
-add_test (approximation-2 ${CMAKE_RITA_EXEC} example2.rita)
+add_test (approx1 ${CMAKE_RITA_EXEC} example1.rita)
+add_test (approx2 ${CMAKE_RITA_EXEC} example2.rita)
 
 install (FILES
          README.md
          example1.rita
+         example2.rita
          ex1.dat
          ex2.dat
-         example2.rita
          DESTINATION ${INSTALL_TUTORIALDIR}/${PROJECT_NAME}
         )
