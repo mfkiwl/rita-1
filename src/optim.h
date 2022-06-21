@@ -36,7 +36,7 @@
 
 namespace RITA {
  
-#define NO_OPT  cout << "No optimization problem defined." << endl;
+#define NO_OPT  log = true; cout << "No optimization problem defined." << endl;
 
 class optim
 {
@@ -47,7 +47,7 @@ class optim
     int set();
     int run();
     OFELI::OptSolver::OptMethod Alg;
-    int size, nb_eqc, nb_lec, nb_gec, igrad, ihess, iincons, ieqcons;
+    int size, nb_eqc, nb_lec, nb_gec, igrad, ihess, iincons, ieqcons, verbose;
     OFELI::Fct *J_Fct;
     bool G_ok, H_ok, log, solved, lp;
     double penal, b, obj;
@@ -55,15 +55,16 @@ class optim
     vector<double> init;
     vector<OFELI::Vect<double> *> a_le, a_ge, a_eq;
     OFELI::Vect<double> lb, ub, a, b_eq, b_ge, b_le;
+    void print(ostream& s) const;
 
  private:
     
     rita *_rita;
     int _ret, _verb;
     string _fn, _alg;
-    bool _log;
     configure *_configure;
     cmd *_cmd;
+    data *_data;
 
     map<string,OFELI::OptSolver::OptMethod> Nopt = {{"gradient",OFELI::OptSolver::GRADIENT},
                                                     {"truncated-newton",OFELI::OptSolver::TRUNCATED_NEWTON},
@@ -71,5 +72,7 @@ class optim
                                                     {"nelder-mead",OFELI::OptSolver::NELDER_MEAD},
                                                     {"newton",OFELI::OptSolver::NEWTON}};
 };
+
+ostream& operator<<(ostream& s, const optim& o);
 
 } /* namespace RITA */

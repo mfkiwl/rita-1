@@ -1466,4 +1466,41 @@ void equa::set()
       ls = CG_SOLVER, prec = DILU_PREC;
 }
 
+
+void equa::print(ostream& s) const
+{
+   map<int,string> name = {{LAPLACE,"Laplace equation"}, {HEAT,"Heat equation"}, {WAVE,"Wave equation"}, {TRANSPORT,"Linear transport equation"},
+                           {LINEAR_ELASTICITY,"Linear Elasticity equations"}, {TRUSS,"2-D Elastic truss equations"}, {BEAM,"3-D Elastic beam equations"},
+                           {INCOMPRESSIBLE_NAVIER_STOKES,"Incompressible Navier-Stokes equations"}, {COMPRESSIBLE_EULER,"Compressible Euler equations"},
+                           {INCOMPRESSIBLE_POROUS_1PHASE,"Incompressible One-phase Porous media equation"}};
+   map<int,string> sd = {{FD,"Finite Differences"}, {FE_P1,"P1 Finite Elements"}, {FE_P2,"P2 Finite Elements"},{FE_Q1,"Q1 Finite Elements"},
+                         {FV,"Finite Volumes"}, {DG,"Discontinuous Galerkin"}};
+   map<OFELI::Iteration,string> lls = {{OFELI::DIRECT_SOLVER,"Direct solver"}, {OFELI::CG_SOLVER,"Conjugate Gradient"},
+                                       {OFELI::CGS_SOLVER,"Conjugate Gradient Squared"}, {OFELI::BICG_SOLVER,"Bi-Conjugate Gradient"},
+                                       {OFELI::BICG_STAB_SOLVER,"BiConjugate Gradient Stabilized"},
+                                       {OFELI::GMRES_SOLVER,"Generalized Minimal Residual"}};
+   if (log.fail()) {
+      cout << "PDE improperly or not defined !" << endl;
+      return;
+   }
+//   if (!solved) {
+//      cout << "Nothing to output: PDE unsolved !" << endl;
+//      return;
+//   }
+   s << "PDE solver" << endl;
+   s << "PDE: " << name[ieq] << endl;
+   s << "Space dimension: " << _dim << endl;
+   s << "Space discretization: " << sd[Sdm] << endl;
+   s << "Linear system solver: " << lls[ls] << endl;
+   if (verbose==0)
+      return;
+}
+
+
+ostream& operator<<(ostream& s, const equa& e)
+{
+   e.print(s);
+   return s;
+}
+
 } /* namespace RITA */

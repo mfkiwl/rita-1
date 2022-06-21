@@ -34,6 +34,7 @@
 #include "stationary.h"
 #include "transient.h"
 #include "optim.h"
+#include "eigen.h"
 #include "util/macros.h"
 
 namespace RITA {
@@ -285,7 +286,33 @@ int solve::run_transient()
 
 int solve::run_eigen()
 {
-   _rita->msg("solve>run>","Eigenproblem solver not implemented.");
+   _eigen = _rita->_eigen;
+   if (!_eigen->log) {
+      _rita->msg("solve>run_eigen>","Eigenproblem undefined or improperly defined.");
+      return 1;
+   }
+   EigenProblemSolver es;
+   es.setMatrix(_eigen->M);
+   if (_eigen->symm) {
+      es.set(OFELI::SUBSPACE,true);
+      es.setNbEigv(_eigen->nb_eigv);
+   }
+   else {
+      es.set(OFELI::QR,false);
+      if (_eigen->eig_vec)
+         es.setEigenVectors();
+   }
+   es.run();
+   for (int i=1; i<=_eigen->nb_eigv; ++i) {
+      (*_data->u[_data->FieldName[_eigen->eval+"-r"]])(i) = es.getEigenValue(i,1);      
+      (*_data->u[_data->FieldName[_eigen->eval+"-i"]])(i) = es.getEigenValue(i,2);      
+      if (_eigen->eig_vec) {
+         es.getEigenVector(i,*(_data->u[_data->FieldName[_eigen->evect+"-"+to_string(i)+"r"]]),
+                             *(_data->u[_data->FieldName[_eigen->evect+"-"+to_string(i)+"i"]]));
+      }
+   }
+   cout << "Eigenvalues saved in vectors: " << _eigen->eval+"-r, " << _eigen->eval+"-i" << endl;
+   cout << "Eigenvectors saved in vectors: " << _eigen->evect+"-*r*, " << _eigen->evect+"-*i*, " << endl;
    return 0;
 }
 
@@ -544,6 +571,10 @@ void solve::display(int f)
             cout << (*_data->u[f])[i] << endl;
       }
       cout << "Optimal objective: " << _rita->_optim->obj << endl;
+   }
+   else if (_data->FieldType[f]==data::eqType::EIGEN) {
+      _eigen->verbose = 2;
+      cout << *_eigen;
    }
 }
 

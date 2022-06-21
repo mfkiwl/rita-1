@@ -47,6 +47,7 @@ namespace RITA {
 class configure;
 class data;
 class optim;
+class eigen;
 
 class solve
 {
@@ -77,6 +78,7 @@ class solve
     configure *_configure;
     data *_data;
     optim *_optim;
+    eigen *_eigen;
     cmd *_cmd;
     odae *_ode, *_ae;
     equa *_pde;

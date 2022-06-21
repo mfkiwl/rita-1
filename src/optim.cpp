@@ -44,6 +44,7 @@ optim::optim(rita*      r,
    nb_lec = nb_gec = nb_eqc = 0;
    G_ok = H_ok = solved = lp = false;
    penal = 1./OFELI_TOLERANCE;
+   _data = _rita->_data;
 }
 
 
@@ -64,7 +65,6 @@ int optim::run()
    OFELI::Vect<double> *A_le, *A_ge, *A_eq;
    string str, J, name="", var_name, method="gradient", constr="";
    string fn="";
-   data *theData = _rita->_data;
    init.clear();
    grad.clear();
    hess.clear();
@@ -81,7 +81,7 @@ int optim::run()
       switch (n) {
 
          case 0:
-            _ret = theData->getPar(0,"optimization>",size);
+            _ret = _data->getPar(0,"optimization>",size);
             break;
 
          case 1:
@@ -190,14 +190,14 @@ int optim::run()
       }
       *_rita->ofh << "optimization";
       if (count_fct>0) {
-         ind = theData->checkFct(name);
+         ind = _data->checkFct(name);
          if (ind==-1) {
             _rita->msg("optimization>","Non defined function "+name);
             NO_OPT
             return 1;
          }
-         J_Fct = theData->theFct[ind];
-         if (J_Fct->set(name,theData->theFct[ind]->expr,theData->theFct[ind]->var,1)) {
+         J_Fct = _data->theFct[ind];
+         if (J_Fct->set(name,_data->theFct[ind]->expr,_data->theFct[ind]->var,1)) {
             _rita->msg("optimization>","Error in function evaluation: "+J_Fct->getErrorMessage());
             NO_OPT
             return 1;
@@ -205,7 +205,7 @@ int optim::run()
          *_rita->ofh << " function=" << name;
       }
       else {
-         theData->addField(var_name,size);
+         _data->addField(var_name,size);
          if (size==1)
             var.push_back(var_name);
          else {
@@ -213,12 +213,12 @@ int optim::run()
                var.push_back(var_name+to_string(i+1));
          }
          *_rita->ofh << " var=" << var_name;
-         theData->addFunction(J,var);
-         if (theData->iField<theData->nb_fields-1)
-            theData->FieldType[theData->iField] = data::eqType::OPT;
+         _data->addFunction(J,var);
+         if (_data->iField<_data->nb_fields-1)
+            _data->FieldType[_data->iField] = data::eqType::OPT;
          else
-            theData->FieldType.push_back(data::eqType::OPT);
-         J_Fct = theData->theFct[theData->nb_fcts];
+            _data->FieldType.push_back(data::eqType::OPT);
+         J_Fct = _data->theFct[_data->nb_fcts];
          if (count_grad) {
             if (count_grad!=size) {
                _rita->msg("optimization>","Illegal number of gradient components given.");
@@ -227,8 +227,8 @@ int optim::run()
             }
             G_ok = true;
             for (int i=0; i<size; ++i) {
-               igrad = theData->addFunction(grad[i],var);
-               G_Fct.push_back(theData->theFct[theData->nb_fcts]);
+               igrad = _data->addFunction(grad[i],var);
+               G_Fct.push_back(_data->theFct[_data->nb_fcts]);
             }
             *_rita->ofh << " gradient=" << grad[0];
             for (int i=1; i<size-1; ++i)
@@ -244,8 +244,8 @@ int optim::run()
             H_ok = true;
             for (int i=0; i<size; ++i) {
                for (int j=0; j<size; ++j) {
-                  ihess = theData->addFunction(hess[size*i+j],var);
-                  H_Fct.push_back(theData->theFct[theData->nb_fcts]);
+                  ihess = _data->addFunction(hess[size*i+j],var);
+                  H_Fct.push_back(_data->theFct[_data->nb_fcts]);
                }
             }
             *_rita->ofh << " hessian=" << hess[0];
@@ -273,10 +273,10 @@ int optim::run()
          for (int i=0; i<size; ++i)
             *_rita->ofh << "," << init[i+1];
          for (int i=0; i<size; ++i)
-            theData->u[theData->iField][i] = init[i];
+            _data->u[_data->iField][i] = init[i];
          *_rita->ofh << endl;
       }
-      log = 0;
+      log = false;
    }
 
    else {
@@ -538,7 +538,7 @@ int optim::run()
                break;
 
             case  14:
-               if (_log) {
+               if (log) {
                   cout << "Please define algebraic equation first." << endl;
                   _rita->msg("optimization>algorithm>","equation must be set first.","",1);
                   break;
@@ -607,11 +607,11 @@ int optim::run()
                   break;
                }
                if (!_cmd->get(fn))
-                  theData->print(fn);
+                  _data->print(fn);
                break;
 
             case 107:
-               theData->Summary();
+               _data->Summary();
                break;
 
             case 108:
@@ -631,11 +631,11 @@ int optim::run()
                      break;
                   }
                   *_rita->ofh << "optimization\n size " << size << endl << "  lp" << endl;
-                  theData->addField(var_name,size);
-                  if (theData->iField<theData->nb_fields-1)
-                     theData->FieldType[theData->iField] = data::eqType::OPT;
+                  _data->addField(var_name,size);
+                  if (_data->iField<_data->nb_fields-1)
+                     _data->FieldType[_data->iField] = data::eqType::OPT;
                   else
-                     theData->FieldType.push_back(data::eqType::OPT);
+                     _data->FieldType.push_back(data::eqType::OPT);
                   if (size==1)
                      var.push_back(var_name);
                   else {
@@ -697,14 +697,14 @@ int optim::run()
                   }
                   *_rita->ofh << "optimization\n  size " << size << endl;
                   if (count_fct>0) {
-                     ind = theData->checkFct(name);
+                     ind = _data->checkFct(name);
                      if (ind==-1) {
                         _rita->msg("optimization>end>","Non defined function "+name);
                         _ret = 1;
                         break;
                      }
-                     J_Fct = theData->theFct[ind];
-                     if (J_Fct->set(name,theData->theFct[ind]->expr,theData->theFct[ind]->var,1)) {
+                     J_Fct = _data->theFct[ind];
+                     if (J_Fct->set(name,_data->theFct[ind]->expr,_data->theFct[ind]->var,1)) {
                         _rita->msg("optimization>end>:","Error in function evaluation: "+J_Fct->getErrorMessage());
                         _ret = 1;
                         break;
@@ -712,7 +712,7 @@ int optim::run()
                      *_rita->ofh << "  function " << name << endl;
                   }
                   else {
-                     theData->addField(var_name,size);
+                     _data->addField(var_name,size);
                      if (size==1)
                         var.push_back(var_name);
                      else {
@@ -721,12 +721,12 @@ int optim::run()
                      }
                      *_rita->ofh << "  variable " << var_name << endl;
                      *_rita->ofh << "  objective " << J << endl;
-                     theData->addFunction(J,var);
-                     if (theData->iField<theData->nb_fields-1)
-                        theData->FieldType[theData->iField] = data::eqType::OPT;
+                     _data->addFunction(J,var);
+                     if (_data->iField<_data->nb_fields-1)
+                        _data->FieldType[_data->iField] = data::eqType::OPT;
                      else
-                        theData->FieldType.push_back(data::eqType::OPT);
-                     J_Fct = theData->theFct[theData->nb_fcts];
+                        _data->FieldType.push_back(data::eqType::OPT);
+                     J_Fct = _data->theFct[_data->nb_fcts];
                   }
                   if (count_grad) {
                      if (count_grad!=size) {
@@ -735,8 +735,8 @@ int optim::run()
                      }
                      G_ok = true;
                      for (int i=0; i<size; ++i) {
-                        igrad = theData->addFunction(grad[i],var);
-                        G_Fct.push_back(theData->theFct[theData->nb_fcts]);
+                        igrad = _data->addFunction(grad[i],var);
+                        G_Fct.push_back(_data->theFct[_data->nb_fcts]);
                      }
                      *_rita->ofh << "  gradient  ";
                      for (int i=0; i<size; ++i)
@@ -745,13 +745,13 @@ int optim::run()
                   }
                   nb_lec = count_lec, nb_eqc = count_eqc;
                   for (int i=0; i<nb_lec; ++i) {
-                     iincons = theData->addFunction(le_cons[i],var);
-                     inC_Fct.push_back(theData->theFct[theData->nb_fcts]);
+                     iincons = _data->addFunction(le_cons[i],var);
+                     inC_Fct.push_back(_data->theFct[_data->nb_fcts]);
                      *_rita->ofh << "  le-constraint  " << le_cons[i] << endl;
                   }
                   for (int i=0; i<nb_eqc; ++i) {
-                     ieqcons = theData->addFunction(eq_cons[i],var);
-                     eqC_Fct.push_back(theData->theFct[theData->nb_fcts]);
+                     ieqcons = _data->addFunction(eq_cons[i],var);
+                     eqC_Fct.push_back(_data->theFct[_data->nb_fcts]);
                      *_rita->ofh << "  eq-constraint  " << eq_cons[i] << endl;
                   }
                   if (penal_ok)
@@ -759,14 +759,15 @@ int optim::run()
                   if (count_hess) {
                      if (count_hess!=size*size) {
                         _rita->msg("optimization>end>","Illegal number of hessian components given.");
+                        log = true;
                         return 1;
                      }
                      H_ok = true;
                      *_rita->ofh << "  hessian  ";
                      for (int i=0; i<size; ++i) {
                         for (int j=0; j<size; ++j) {
-                           ihess = theData->addFunction(hess[size*i+j],var);
-                           H_Fct.push_back(theData->theFct[theData->nb_fcts]);
+                           ihess = _data->addFunction(hess[size*i+j],var);
+                           H_Fct.push_back(_data->theFct[_data->nb_fcts]);
                            *_rita->ofh << hess[size*i+j] << " ";
                         }
                      }
@@ -794,12 +795,12 @@ int optim::run()
                      init.push_back(0.);
                   *_rita->ofh << "  init  ";
                   for (int i=0; i<size; ++i) {
-                     (*theData->u[theData->iField])[i] = init[i];
+                     (*_data->u[_data->iField])[i] = init[i];
                      *_rita->ofh << init[i] << "  ";
                   }
                }
                *_rita->ofh << "\n  end" << endl;
-               log = 0;
+               log = false;
                _rita->_ret = 0;
                return 0;
 
@@ -819,6 +820,22 @@ int optim::run()
    }
    _rita->_ret = 0;
    return 0;
+}
+
+
+void optim::print(ostream& s) const
+{
+   s << "Optimization problem solver" << endl;
+   s << "Problem size: " << size << endl;
+   if (verbose==0)
+      return;
+}
+
+
+ostream& operator<<(ostream& s, const optim& o)
+{
+   o.print(s);
+   return s;
 }
 
 } /* namespace RITA */

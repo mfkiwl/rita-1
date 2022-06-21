@@ -42,6 +42,26 @@ class rita;
 class cmd;
 class data;
 
+class FctMatrix : public ICallback
+{
+  public:
+     FctMatrix();
+     virtual ~FctMatrix();
+     virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc) override;
+     virtual const char_type* GetDesc() const override;
+     virtual IToken* Clone() const override;
+};
+
+class FctVector : public ICallback
+{
+  public:
+     FctVector();
+     virtual ~FctVector();
+     virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc) override;
+     virtual const char_type* GetDesc() const override;
+     virtual IToken* Clone() const override;
+};
+
 class calc {
 
  public:

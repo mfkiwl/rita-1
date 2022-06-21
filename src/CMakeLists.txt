@@ -25,7 +25,7 @@
 # Look for the ofeli library
 find_library (OFELI_LIB NAMES ofeli PATHS ${OFELI_LIBDIR})
 if (NOT OFELI_LIB)
-  message (FATAL_ERROR "ofeli library not found")
+   message (FATAL_ERROR "ofeli library not found")
 endif ()
 
 # Look for the gmsh library
@@ -57,7 +57,7 @@ target_sources (${PROJECT_NAME} PRIVATE
                ) 
 
 target_link_libraries (rita ${OFELI_LIB};${GMSH_LIB})
-install (FILES ${CMAKE_BINARY_DIR}/src/rita DESTINATION ${INSTALL_BINDIR})
+install (TARGETS rita RUNTIME DESTINATION ${INSTALL_BINDIR})
 
 #
 # Configure config.h

@@ -61,6 +61,7 @@ class stationary;
 class optim;
 class integration;
 class approximation;
+class eigen;
 class help;
 class solve;
 class mesh;
@@ -161,6 +162,7 @@ class rita
    transient *_transient;
    stationary *_stationary;
    optim *_optim;
+   eigen *_eigen;
    approximation *_approx;
    integration *_integration;
    double _init_time, _time_step, _final_time;

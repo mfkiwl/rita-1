@@ -29,8 +29,9 @@
 
 #define _USE_MATH_DEFINES 
 #undef __STRICT_ANSI__
-#if defined(_WIN32) 
-  // Memory leak dumping
+
+#if defined(_WIN32)
+// Memory leak dumping
   #if defined(_DEBUG)
     #define _CRTDBG_MAP_ALLOC
     #include <stdlib.h>
@@ -38,7 +39,7 @@
     #define CREATE_LEAKAGE_REPORT
   #endif
 
-  // Needed for windows console UTF-8 support
+// Needed for windows console UTF-8 support
   #include <fcntl.h>
   #include <io.h>
 #endif
@@ -61,12 +62,91 @@
 
 namespace RITA {
 
+FctMatrix::FctMatrix() : ICallback(cmFUNC, _T("matrix"), -1)
+{ }
+
+
+FctMatrix::~FctMatrix()
+{ }
+
+
+void FctMatrix::Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc)
+{
+   if (argc < 1 || argc>2) {
+      ErrorContext err;
+      err.Errc = ecINVALID_NUMBER_OF_PARAMETERS;
+      err.Arg = argc;
+      err.Ident = GetIdent();
+      throw ParserError(err);
+   }
+
+   int_type m = a_pArg[0]->GetInteger(),
+   n = (argc==1) ? m : a_pArg[1]->GetInteger();
+   if (m==n && n==1)
+      *ret = 0.0;
+   else
+      *ret = matrix_type(m, n, 0.0);
+}
+
+
+const char_type* FctMatrix::GetDesc() const
+{
+   return _T("matrix(x[,y]) - Returns a vector whose elements are all 0.");
+}
+
+
+IToken* FctMatrix::Clone() const
+{
+   return new FctMatrix(*this);
+}
+
+
+FctVector::FctVector() : ICallback(cmFUNC, _T("vector"), -1)
+{ }
+
+
+FctVector::~FctVector()
+{ }
+
+
+void FctVector::Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc)
+{
+   if (argc != 1) {
+      ErrorContext err;
+      err.Errc = ecINVALID_NUMBER_OF_PARAMETERS;
+      err.Arg = argc;
+      err.Ident = GetIdent();
+      throw ParserError(err);
+   }
+
+   int_type n = a_pArg[0]->GetInteger();
+   if (n==1)
+      *ret = 0.0;
+   else
+      *ret = matrix_type(n, 1, 0.0);
+}
+
+
+const char_type* FctVector::GetDesc() const
+{
+   return _T("vector(x) - Returns a vector whose elements are all 0.");
+}
+
+
+IToken* FctVector::Clone() const
+{
+   return new FctVector(*this);
+}
+
+
 calc::calc(rita* r,
            cmd*  command)
      : _rita(r), _cmd(command), _data(r->_data)
 {
    parser = new ParserX(pckALL_NON_COMPLEX);
    parser->EnableAutoCreateVar(true);
+   parser->DefineFun(new FctMatrix);
+   parser->DefineFun(new FctVector);
 }
 
 
@@ -146,7 +226,7 @@ void calc::setData(ParserXBase* p)
                   _data->u[_data->iField] = _u;
                }
                else {
-                  _data->addMatrix(v.first,nr,nc);
+                  _data->addMatrix(v.first,nr,nc,"");
                   _M = _data->theMatrix[_data->iMatrix];
                   for (int i=1; i<=nr; ++i)
                      for (int j=1; j<=nc; ++j)

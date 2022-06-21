@@ -24,7 +24,7 @@
 
                         Definition of class 'data'
 
-  ==============================================================================*/
+  ===========================================================&===================*/
 
 #pragma once
 
@@ -51,7 +51,7 @@ class data
 
  public:
 
-    enum class eqType { AE, ODE, PDE, OPT, INTEGR };
+    enum class eqType { AE, ODE, PDE, OPT, EIGEN, INTEGR };
     enum class DataType { PARAM, FIELD, MATRIX, GRID, MESH, TAB, FCT, AE, ODE, PDE };
     enum class DataSize { GIVEN_SIZE, GRID, NODES, ELEMENTS, SIDES, EDGES };
     enum class Storage { DENSE, SPARSE, SKYLINE, BAND, TRIDIAGONAL, DIAGONAL };
@@ -59,8 +59,7 @@ class data
 
     data(rita *r, cmd *command, configure *config);
     ~data();
-    int addField(const string& name, int n=1);
-    int addMatrix(const string& name, int nr=1, int nc=1, Storage s=Storage::DENSE);
+    int addField(const string& name, int n=1, string file="");
     int addMeshField(const string& name, DataSize s, int nb_dof=1);
     int addGridField(const string& name, int nb_dof=1);
     int addParam(const string& name, double value);
@@ -78,12 +77,14 @@ class data
     int checkMesh(const string& name);
     int checkGrid(const string& name);
     int run();
+    int save();
     void setVerbose(int verb) { _verb = verb; }
     void setSave(int s) { _sr = s; }
     int getVerbose() const { return _verb; }
     void set(cmd* command) { _cmd = command; }
     int ret() const { return _ret; }
     int addFunction(const string &def, const vector<string> &var, string name="");
+    int addMatrix(string name, int nr, int nc, string file="", string s="dense");
     int addMesh(OFELI::Mesh* ms, const string& name);
     int getPar(int n, const string& msg, double& v);
     int getPar(int n, const string& msg, int& v);
@@ -139,6 +140,10 @@ class data
     double *_theParam;
     void getHelp();
     int setNbDOF();
+    map<string,OFELI::MatrixType> st_map = {{"dense",OFELI::DENSE},
+                                            {"band",OFELI::BAND},
+                                            {"skyline",OFELI::SKYLINE},
+                                            {"sparse",OFELI::SPARSE}};
 
     int setConfigure();
     int setVector();

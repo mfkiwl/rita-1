@@ -2546,15 +2546,15 @@ void mesh::Save()
          case 100:
          case 101:
             _cmd->setNbArg(0);
-               cout << "\nAvailable Commands\n";
-               cout << "domain:  Save domain file\n";
-               cout << "geo:     Save geo file\n";
-               cout << "mesh:    Save mesh in OFELI format\n";
-               cout << "gmsh:    Save mesh in gmsh format\n";
-               cout << "vtk:     Save mesh in vtk format\n";
-               cout << "gnuplot: Save mesh in gnuplot format\n";
-               cout << "matlab:  Save mesh in matlab format\n";
-               cout << "tecplot: Save mesh in tecplot format\n" << endl;
+            cout << "\nAvailable Commands\n";
+            cout << "domain:  Save domain file\n";
+            cout << "geo:     Save geo file\n";
+            cout << "mesh:    Save mesh in OFELI format\n";
+            cout << "gmsh:    Save mesh in gmsh format\n";
+            cout << "vtk:     Save mesh in vtk format\n";
+            cout << "gnuplot: Save mesh in gnuplot format\n";
+            cout << "matlab:  Save mesh in matlab format\n";
+            cout << "tecplot: Save mesh in tecplot format\n" << endl;
             break;
 
          default:

@@ -60,7 +60,7 @@ class equa
     struct Log {
       bool pde, field, spd, ls, nl, mesh;
       Log() { pde = field = spd = ls = nl = mesh = false; }
-      bool fail() { return (pde || field || spd || ls || nl || mesh); }
+      bool fail() const { return (pde || field || spd || ls || nl || mesh); }
     };
 
     struct PdeData {
@@ -106,7 +106,7 @@ class equa
        DG
     };
 
-    int nb_fields, pde, ieq;
+    int nb_fields, pde, ieq, verbose;
     sdm Sdm;
     string eq, nls;
     bool axi;
@@ -141,6 +141,7 @@ class equa
     Vect<double> u, b, bc, bf, sf, *theSolution[5];
     string regex_u;
     map<string,sdm> pde_sdm {{"fd",FD},{"feP1",FE_P1},{"feP2",FE_P2},{"feQ1",FE_Q1},{"fv",FV},{"dg",DG}};
+    void print(ostream& s) const;
 
  private:
 
@@ -167,5 +168,7 @@ class equa
     string _beta_exp, _v_exp, _young_exp, _poisson_exp;
     OFELI::Fct _theFct;
 };
+
+ostream& operator<<(ostream& s, const equa& e);
 
 } /* namespace RITA */

@@ -1,0 +1,15 @@
+# rita Script file to illustrate the use of the calculator
+#
+calc
+  x = 2.0
+  z = log(x+1)
+  v = vector(10)
+  v[2] = -23.0
+  M = matrix(2,3)
+  M[0,0]=2
+  M[1,0]=-1
+  <
+data
+  summary  
+exit
+

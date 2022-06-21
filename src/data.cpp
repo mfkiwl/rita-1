@@ -82,7 +82,7 @@ data::data(rita*      r,
 
 data::~data()
 {
-   if (_theGrid!=nullptr)
+/*   if (_theGrid!=nullptr)
       delete _theGrid;
    if (_theMesh!=nullptr)
       delete _theMesh;
@@ -92,12 +92,12 @@ data::~data()
       delete _theTab;
    if (_theVector!=nullptr)
       delete _theVector;
-   if (_theMatrix!=nullptr)
-      delete _theMatrix;
-   if (_u!=nullptr)
-      delete _u;
+//   if (_theMatrix!=nullptr)
+//      delete _theMatrix;
+//   if (_u!=nullptr)
+//      delete _u;
    if (_theParam!=nullptr)
-      delete _theParam;
+      delete _theParam;*/
 }
 
 
@@ -470,9 +470,16 @@ int data::addParam(const string& name,
 
 
 int data::addField(const string& name,
-                   int           n)
+                   int           n,
+                   string        file)
 {
+   if (file!="")
+      n = 1;
    _u = new OFELI::Vect<double>(n);
+   if (file!="") {
+      OFELI::XMLParser xml(file,OFELI::XMLParser::MATRIX);
+      xml.get(*_u);
+   }
    if (FieldName[name]==0) {
       Field.push_back(name);
       iField = ++nb_fields;
@@ -490,12 +497,20 @@ int data::addField(const string& name,
 }
 
 
-int data::addMatrix(const string& name,
-                    int           nr,
-                    int           nc,
-                    Storage       s)
+int data::addMatrix(string name,
+                    int    nr,
+                    int    nc,
+                    string file,
+                    string s)
 {
-   _theMatrix = new OFELI::DMatrix<double>(nr,nc);
+   if (file!="")
+      nr = 1, nc = 1;
+   _theMatrix = new DMatrix<double>(nr,nc);
+   if (file!="") {
+      OFELI::XMLParser xml(file,OFELI::XMLParser::MATRIX);
+      xml.get(_theMatrix);
+   }
+   matrix_name.push_back(name);
    if (MatrixName[name]==0) {
       Matr.push_back(name);
       iMatrix = ++nb_matrices;
@@ -630,7 +645,7 @@ int data::run()
    int key = 0;
    string td = "", fn="";
    static const vector<string> kw {"grid","mesh","field","tab$ulation","func$tion",
-                                   "vect$or","matr$ix","summary","list"};
+                                   "vect$or","matr$ix","save","sum$mary","list"};
    *_rita->ofh << "data" << endl;
    while (1) {
       if (_cmd->readline("rita>data> ")<0)
@@ -667,10 +682,14 @@ int data::run()
             break;
 
          case   7:
-            Summary();
+            _ret = save();
             break;
 
          case   8:
+            Summary();
+            break;
+
+         case   9:
             if (_cmd->setNbArg(1,"Type of data to list.")) {
                _rita->msg("data>list>","Missing data type to list.","",1);
                break;
@@ -738,7 +757,7 @@ int data::run()
          default:
             _rita->msg("data>","Unknown Command "+_cmd->token(),
                        "Available commands: grid, mesh, field, tabulation, function, vector, matrix,"
-                       " summary, list");
+                       " save, summary, list");
             break;
       }
    }
@@ -762,6 +781,7 @@ void data::getHelp()
    cout << "set:        Set configuration data\n";
    cout << "par or @:   Defined a parameter (constant)\n";
    cout << "print       print a specific entity\n";
+   cout << "save        save a specific entity in file\n";
    cout << "summary:    Summary of defined entities\n\n";
    cout << "end or <:   Back to higher level\n";
    cout << "exit:       Terminate execution\n" << endl;
@@ -972,10 +992,58 @@ int data::setVector()
 int data::setMatrix()
 {
    string name="mat-"+to_string(nb_matrices+1);
-   static const vector<string> kw {"name","storage","size","def$ine","set"};
-   theMatrix.push_back(_theMatrix);
-   matrix_name.push_back(name);
-   nb_matrices++;
+   string file="", storage="dense";
+   int nr=0, nc=0;
+   static const vector<string> kw {"name","file","storage","nr","nc","def$ine","set"};
+   _cmd->set(kw,_rita->_gkw);
+   int nb_args = _cmd->getNbArgs();
+   if (nb_args<=0) {
+      _rita->msg("data>matrix>","Error in command.");
+      return 1;
+   }
+   for (int i=0; i<nb_args; ++i) {
+      int n = _cmd->getArg("=");
+      switch (n) {
+
+         case   0:
+            name = _cmd->string_token();
+            break;
+
+         case   1:
+            file = _cmd->string_token();
+            break;
+
+         case   2:
+            storage = _cmd->string_token();
+            break;
+
+         case   3:
+            nr = _cmd->int_token();
+            if (nc==0)
+               nc = nr;
+            break;
+
+         case   4:
+            nc = _cmd->int_token();
+            if (nr==0)
+               nr = nc;
+            break;
+
+         default:
+            _rita->msg("data>matrix>","Unknown argument: "+kw[n]);
+            return 1;
+      }
+   }
+   if (file=="") {
+      _rita->msg("data>matrix>","No file name given for matrix input.");
+      return 1;
+   }
+   if (storage!="dense") {
+      _rita->msg("data>matrix>","Only dense storage is allowed in the current release.");
+      return 1;
+   }
+
+   addMatrix(name,nr,nc,file,storage);
    return 0;
 }
 
@@ -1346,6 +1414,89 @@ int data::getPar(int n, const string& msg, double& v)
 }
 
 
+int data::save()
+{
+   string name="", file="", format="", t="";
+   bool name_ok=false, file_ok=false, format_ok=true;
+   static const vector<string> kw {"name","file","format"};
+   _cmd->set(kw,_rita->_gkw);
+   int nb_args = _cmd->getNbArgs();
+   if (nb_args==0) {
+      _rita->msg("data>save>","No argument given.");
+      return 1;
+   }
+   for (int i=0; i<nb_args; ++i) {
+      int n = _cmd->getArg();
+      switch (n) {
+
+         case 0:
+            if ((t=_cmd->string_token())!="")
+               name = t;
+            name_ok = true;
+            break;
+
+         case 1:
+            if ((t=_cmd->string_token())!="")
+               file = t;
+            file_ok = true;
+            break;
+
+         case 2:
+            if ((t=_cmd->string_token())!="")
+               format = t;
+            format_ok = true;
+            break;
+
+         default:
+            _rita->msg("data>save>","Unknown argument.");
+            cout << "\nAvailable Arguments\n";
+            cout << "name: Name of entity to save\n";
+            cout << "file: File where to save datum" << endl;
+            _ret = 1;
+            break;
+      }
+   }
+   if (name_ok==false) {
+      _rita->msg("data>save>","No data to save.");
+      return 1;
+   }
+
+   int k = checkName(name,DataType::FIELD);
+   if (k>0) {
+      OFELI::IOField ffo(file,OFELI::IOField::OUT);
+      ffo.put(*u[k]);
+      return 0;
+   }
+   k = checkName(name,DataType::MATRIX);
+   if (k>0) {
+      OFELI::saveMatrix(theMatrix[k],file);
+      return 0;
+   }
+   k = checkName(name,DataType::MESH);
+   if (k>0) {
+      saveMesh(file,*theMesh[k],GMSH);
+      return 0;
+   }
+   k = checkName(name,DataType::GRID);
+   if (k>0) {
+      _rita->msg("data>save>","This option is not yet implemented.");
+      return 0;
+   }
+   k = checkName(name,DataType::FCT);
+   if (k>0) {
+      _rita->msg("data>save>","This type of data cannot be saved in file.");
+      return 0;
+   }
+   k = checkName(name,DataType::TAB);
+   if (k>0) {
+      _rita->msg("data>save>","This type of data cannot be saved in file.");
+      return 0;
+   }
+   _rita->msg("data>save>","No data entity "+name+" found.");
+   return 1;
+}
+
+
 void data::ListParams(int opt)
 {
    if (opt && !nb_params) {
@@ -1423,8 +1574,8 @@ void data::ListMatrices(int opt)
    }
    cout << "Number of matrices: " << nb_matrices << endl;
    for (int i=1; i<=nb_matrices; ++i) {
-      cout << "Matrix: " << Matr[i] << ", Nb. of rows: " << theMatrix[i]->getNbRows()
-           << ", Nb. of columns: " << theMatrix[i]->getNbColumns() << endl;
+      cout << "Matrix: " << Matr[i] << ", Size: " << theMatrix[i]->getNbRows()
+           << " x " << theMatrix[i]->getNbColumns() << endl;
    }
 }
 
@@ -1444,23 +1595,20 @@ void data::ListGrids(int opt)
       if (g->getDim()==1) {
          cout << "Domain:                    (" << g->getX(1) << ","
               << g->getX(theGrid[k]->getNx()+1) << ")" << endl;
-         cout << "Number of x-intervals:    " << g->getNx() << endl;
+         cout << "Number of intervals:    " << g->getNx() << endl;
       }
       else if (g->getDim()==2) {
          cout << "Domain:                    (" << g->getX(1) << ","
               << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
               << g->getY(g->getNy()+1) << ")" << endl;
-         cout << "Number of x-intervals:    " << g->getNx() << endl;
-         cout << "Number of y-intervals:    " << g->getNy() << endl;
+         cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << endl;
       }
       else if (g->getDim()==3) {
          cout << "Domain:                    (" << g->getX(1) << ","
               << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
               << g->getY(g->getNy()+1) << ")x(" << g->getZ(1) << ","
               << g->getZ(g->getNz()+1) << ")" << endl;
-         cout << "Number of x-intervals:    " << g->getNx() << endl;
-         cout << "Number of y-intervals:    " << g->getNy() << endl;
-         cout << "Number of z-intervals:    " << g->getNz() << endl;
+         cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << " x " << g->getNz() << endl;
       }
    }
 }

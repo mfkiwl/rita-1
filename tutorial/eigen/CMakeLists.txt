@@ -22,22 +22,15 @@
 #
 # ==============================================================================
 
-include (CTest)
+project (eigen)
 
-set (CMAKE_RITA_EXEC ${CMAKE_BINARY_DIR}/src/rita)
+file (COPY example1.rita m.dat DESTINATION .)
 
-add_subdirectory (calc)
-add_subdirectory (ae)
-add_subdirectory (ode)
-add_subdirectory (pde)
-add_subdirectory (optim)
-add_subdirectory (eigen)
-add_subdirectory (integration)
-add_subdirectory (approximation)
+add_test (eigen-1 ${CMAKE_RITA_EXEC} example1.rita)
 
-add_custom_target (tutorial
-                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                   COMMENT "Running tutorial..."
-                  )
-
-message (STATUS "Setting up testsuite - Done")
+install (FILES
+         README.md
+         example1.rita
+         m.dat
+         DESTINATION ${INSTALL_TUTORIALDIR}/${PROJECT_NAME}
+        )

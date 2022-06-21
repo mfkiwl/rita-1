@@ -38,6 +38,7 @@
 #include "equa.h"
 #include "solve.h"
 #include "optim.h"
+#include "eigen.h"
 #include "integration.h"
 #include "approximation.h"
 #include "help.h"
@@ -116,6 +117,7 @@ rita::rita()
    _optim = new optim(this,_cmd,_configure);
    _integration = new integration(this,_cmd,_configure);
    _approx = new approximation(this,_cmd,_configure);
+   _eigen = new eigen(this,_cmd,_configure);
    _init_time = 0.;
    _final_time = 1.;
    _time_step = 0.1;
@@ -653,6 +655,7 @@ void rita::setEigen()
    if (_verb>1)
       cout << "Entering module 'eigen' ..." << endl;
    _analysis_type = EIGEN;
+   _eigen->run();
    if (_verb>1)
       cout << "Leaving module 'eigen' ..." << endl;
 }

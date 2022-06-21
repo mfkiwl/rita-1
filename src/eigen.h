@@ -28,21 +28,46 @@
 
 #pragma once
 
+
+#include "solvers/EigenProblemSolver.h"
+#include "rita.h"
+#include "solve.h"
+#include "linear_algebra/Matrix.h"
+#include <map>
+
 namespace RITA {
  
+#define NO_EIGEN  log = true; cout << "No eigen problem defined." << endl;
+
 class eigen
 {
-
  public:
 
-    eigen(rita *r);
+    eigen(rita *r, cmd* command, configure* config);
     ~eigen();
+    int set();
     int run();
+    OFELI::EigenMethod Alg;
+    int size, nb_eigv, verbose;
+    bool eig_vec, symm, log, solved;
+    string evect, eval;
+    OFELI::Matrix<double> *M;
+    void print(ostream& s) const;
 
  private:
 
+    rita *_rita;
+    int _ret, _verb;
+    string _alg;
+    configure *_configure;
+    cmd *_cmd;
+    data *_data;
+
+    map<string,OFELI::EigenMethod> meth = {{"subspace",OFELI::SUBSPACE},
+                                           {"qr",OFELI::QR}};
+
 };
 
-} /* namespace RITA */
+ostream& operator<<(ostream& s, const eigen& es);
 
-#endif
+} /* namespace RITA */

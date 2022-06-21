@@ -70,7 +70,7 @@ enable_testing ()
 
 option (BUILD_TESTS "Build test programs" OFF)
 
-add_definitions (-DUSE_GMSH -Wall -fPIE -Ofast -mtune=native -D_REENTRANT -DNDEBUG -fstrict-aliasing -fno-strict-overflow)
+add_definitions (-DUSE_GMSH -Wall -fPIE -Ofast -mtune=native -D_REENTRANT -DNDEBUG -Wunknown-attributes -fstrict-aliasing -fno-strict-overflow)
 
 # Define installation directories
 #
@@ -109,5 +109,5 @@ if (NOT TARGET uninstall)
                    IMMEDIATE @ONLY
                   )
 
-  add_custom_target (uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall.cmake)
+   add_custom_target (uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall.cmake)
 endif ()
