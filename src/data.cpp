@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -32,49 +32,38 @@
 #include "equa.h"
 #include "linear_algebra/Matrix.h"
 #include "io/IOField.h"
+#include "calc.h"
 
 using std::cout;
 using std::endl;
 using std::map;
+
 
 namespace RITA {
 
 data::data(rita*      r,
            cmd*       command,
            configure* config)
-     : _rita(r), _size(0), _default_field(0), _verb(1), _configure(config), _cmd(command),
+     : _rita(r), _size(0), _default_vector(0), _verb(1), _configure(config), _cmd(command),
        _theMesh(nullptr), _theTab(nullptr), _theGrid(nullptr), _theFct(nullptr), 
-       _theVector(nullptr), _theMatrix(nullptr), _u(nullptr), _theParam(nullptr)
+       _theVector(nullptr), _theMatrix(nullptr), _u(nullptr), _hu(nullptr), _theParam(nullptr)
 {
-   nb_fields = nb_params = nb_fcts = nb_meshes = nb_tabs = nb_grids = nb_vectors = nb_matrices = 0;
+   nb_vectors = nb_params = nb_fcts = nb_meshes = nb_tabs = nb_grids = nb_matrices = 0;
    nb_pde = nb_ode = nb_ae = nb_int = nb_eigen = nb_eq = 0;
-   iMesh = iField = iMatrix = iGrid = iParam = iFct = iTab = iAE = iODE = iPDE = iEq = 0;
-   theParam.push_back(nullptr);
-   u.push_back(nullptr);
-   theFct.push_back(nullptr);
-   theMatrix.push_back(nullptr);
-   theMesh.push_back(nullptr);
-   theGrid.push_back(nullptr);
-   theAE.push_back(nullptr);
-   theODE.push_back(nullptr);
-   thePDE.push_back(nullptr);
-   theTab.push_back(nullptr);
-   AE.push_back(" ");
-   ODE.push_back(" ");
-   PDE.push_back(" ");
-   fct_name.push_back(" ");
-   mesh_name.push_back(" ");
-   grid_name.push_back(" ");
-   tab_name.push_back(" ");
-   Param.push_back(" ");
-   Field.push_back(" ");
-   Matr.push_back(" ");
-   FieldType.push_back(eqType::AE);
-   FieldSizeType.push_back(DataSize::GIVEN_SIZE);
-   FieldEquation.push_back(0);
+   iMesh = iVector = iHVector = iMatrix = iGrid = iParam = iFct = iTab = iAE = iODE = iPDE = iEq = 0;
+   theParam.push_back(nullptr), theVector.push_back(nullptr), VectorTime.push_back(0.), theFct.push_back(nullptr);
+   theMatrix.push_back(nullptr), theMesh.push_back(nullptr), theGrid.push_back(nullptr), theHVector.push_back(nullptr);
+   theAE.push_back(nullptr), theODE.push_back(nullptr), thePDE.push_back(nullptr), theTab.push_back(nullptr);
+   aParam.push_back(true), aVector.push_back(true), aHVector.push_back(true), aMatrix.push_back(true), aGrid.push_back(true);
+   aMesh.push_back(true), aTab.push_back(true), aFct.push_back(true), aAE.push_back(true), aODE.push_back(true), 
+   aPDE.push_back(true), AE.push_back(" "), ODE.push_back(" "), PDE.push_back(" "), NameFct.push_back(" ");
+   NameMesh.push_back(" "), NameGrid.push_back(" "), NameTab.push_back(" "), Param.push_back(" "), Vector.push_back(" ");
+   Matr.push_back(" "), HVector.push_back(" ");
+   VectorType.push_back(eqType::AE);
+   VectorSizeType.push_back(DataSize::GIVEN_SIZE);
+   VectorEquation.push_back(0);
    eq_type.push_back(eqType::AE);
    eqq.push_back(0);
-   _u = nullptr;
    _ret = 0;
    ok = false;
 }
@@ -82,66 +71,107 @@ data::data(rita*      r,
 
 data::~data()
 {
-/*   if (_theGrid!=nullptr)
-      delete _theGrid;
-   if (_theMesh!=nullptr)
-      delete _theMesh;
-   if (_theFct!=nullptr)
-      delete _theFct;
-   if (_theTab!=nullptr)
-      delete _theTab;
-   if (_theVector!=nullptr)
-      delete _theVector;
-//   if (_theMatrix!=nullptr)
-//      delete _theMatrix;
-//   if (_u!=nullptr)
-//      delete _u;
-   if (_theParam!=nullptr)
-      delete _theParam;*/
 }
 
 
-int data::checkField(const string& name)
+int data::setDataExt(int key)
 {
-   int k = FieldName[name];
-   if (k==0)
-      return -1;
-   return k;
-}
+   int ret = 0;
+   string td = "", fn="", name="", str1="", str2="";
+   switch (key) {
 
+      case 200:
+         ret = setGrid();
+         break;
 
-int data::checkMatrix(const string& name)
-{
-   return checkName(name,DataType::MATRIX);
-}
+      case 201:
+         ret = _rita->setMesh();
+         break;
 
+      case 202:
+         ret = setVector();
+         break;
 
-int data::checkMesh(const string& name)
-{
-   auto it = find(mesh_name.begin(),mesh_name.end(),name);
-   if (it != mesh_name.end())
-      return distance(mesh_name.begin(),it);
-   else
-      return -1;
-}
+      case 203:
+         ret = setTab();
+         break;
 
+      case 204:
+         ret = setFunction();
+         break;
 
-int data::checkGrid(const string& name)
-{
-   auto it = find(grid_name.begin(),grid_name.end(),name);
-   if (it != grid_name.end())
-      return distance(grid_name.begin(),it);
-   else
-      return -1;
-}
+      case 205:
+         ret = setMatrix();
+         break;
 
+      case 206:
+         ret = save();
+         break;
 
-int data::checkFct(const string& name)
-{
-   int k = FctName[name];
-   if (k==0)
-      return -1;
-   return k;
+      case 207:
+         if (_cmd->setNbArg(1,"Data name to remove.")) {
+            _rita->msg("","Data name to remove.","",1);
+            break;
+         }
+         _cmd->get(td);
+         ret = remove(td);
+         break;
+
+      case 208:
+         _cmd->get(name);
+         _cmd->get(td);
+         setDesc(name,td);
+         break;
+
+      case 209:
+         _cmd->get(str1);
+         _cmd->get(str2);
+         setHistory(str1,str2);
+         break;
+
+      case 210:
+         Summary();
+         break;
+
+      case 211:
+         if (_cmd->setNbArg(1,"Type of data to list.")) {
+            _rita->msg("","Missing data type to list.\nAvailable data: parameters, grids, meshes, vectors, hvectors"
+                          "functions, tabulations, matrices","",1);
+            break;
+         }
+         _cmd->get(td);
+         if (td.substr(0,5)=="param")
+            ListParams(1);
+         else if (td.substr(0,4)=="grid")
+            ListGrids(1);
+         else if (td.substr(0,4)=="mesh")
+            ListMeshes(1);
+         else if (td.substr(0,4)=="vect")
+            ListVectors(1);
+         else if (td.substr(0,5)=="hvect")
+            ListHVectors(1);
+         else if (td.substr(0,5)=="funct")
+            ListFunctions(1);
+         else if (td.substr(0,3)=="tab")
+            ListTabs(1);
+         else if (td.substr(0,5)=="matri")
+            ListMatrices(1);
+         else
+            _rita->msg("list>","Unknown data type "+td);
+         ret = 0;
+         break;
+
+      case 212:
+      case 213:
+         if (_cmd->setNbArg(1,"Data name to be given.",1)) {
+            _rita->msg("","Missing data to display.","",1);
+            break;
+         }
+         if (!_cmd->get(fn))
+            print(fn);
+         break;
+   }
+   return ret;
 }
 
 
@@ -149,6 +179,7 @@ int data::checkName(const string&   name,
                     const DataType& dt,
                     int             opt)
 {
+   int ret = 0;
    if (dn.size()==0)
       return 0;
    DataType d = dn[name].dt;
@@ -156,36 +187,78 @@ int data::checkName(const string&   name,
       switch (d) {
 
          case DataType::PARAM:
-            return ParamName[name];
+            ret = ParamName[name];
+            if (aParam[ret]==false)
+               ret = 0;
+            break;
 
-         case DataType::FIELD:
-            return FieldName[name];
+         case DataType::VECTOR:
+            ret = VectorName[name];
+            if (aVector[ret]==false)
+               ret = 0;
+            break;
+
+         case DataType::HVECTOR:
+            ret = HVectorName[name];
+            if (aHVector[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::MATRIX:
-            return MatrixName[name];
+            ret = MatrixName[name];
+            if (aMatrix[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::GRID:
-            return GridName[name];
+            ret = GridName[name];
+            if (aGrid[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::MESH:
-            return MeshName[name];
+            ret = MeshName[name];
+            if (aMesh[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::TAB:
-            return TabName[name];
+            ret = TabName[name];
+            if (aTab[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::FCT:
-            return FctName[name];
+            ret = FctName[name];
+            if (aFct[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::AE:
-            return AEName[name];
+            ret = AEName[name];
+            if (aAE[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::ODE:
-            return ODEName[name];
+            ret = ODEName[name];
+            if (aODE[ret]==false)
+               ret = 0;
+            break;
 
          case DataType::PDE:
-            return PDEName[name];
+            ret = PDEName[name];
+            if (aPDE[ret]==false)
+               ret = 0;
+            break;
+
+         case DataType::NOTHING:
+            ret = -1;
+            break;
       }
+      return ret;
    }
+
    if (opt==0)
       return 0;
 
@@ -195,8 +268,12 @@ int data::checkName(const string&   name,
          _rita->msg("data>","Name "+name+" already used for a parameter.");
          return -2;
 
-      case DataType::FIELD:
-         _rita->msg("data>","Name "+name+" already used for a field.");
+      case DataType::VECTOR:
+         _rita->msg("data>","Name "+name+" already used for a vector.");
+         return -2;
+
+      case DataType::HVECTOR:
+         _rita->msg("data>","Name "+name+" already used for a history vector.");
          return -2;
 
       case DataType::MATRIX:
@@ -230,7 +307,57 @@ int data::checkName(const string&   name,
       case DataType::PDE:
          _rita->msg("data>","Name "+name+" already used for a partial differential equation.");
          return -2;
+
+      case DataType::NOTHING:
+         return 0;
    }
+   return 0;
+}
+
+
+int data::add2History(const string& s1, const string& s2, double t)
+{
+   int k = checkName(s1,DataType::HVECTOR);
+   if (k==0) {
+      _rita->msg("history>","History Vector "+s1+" not found.");
+      return 1;
+   }
+   _hu = theHVector[k];
+   if (s2!=_hu->getVectorName()) {
+      _rita->msg("history>","History Vector "+s2+" not found in history vector "+s1+".");
+      return 1;
+   }
+   int j = checkName(s2,DataType::VECTOR);
+   theHVector[k]->set(*theVector[j],t);
+   return 0;
+}
+
+
+int data::setHistory(const string& s1, const string& s2)
+{
+   int j = checkName(s1,DataType::VECTOR);
+   if (j==0) {
+      _rita->msg("history>","Vector "+s1+" undefined.");
+      return 1;
+   }
+   int k = checkName(s2,DataType::HVECTOR);
+   if (k==0) {
+      _hu = new HVect;
+      HVector.push_back(s2);
+      iHVector = ++nb_hvectors;
+      theHVector.push_back(_hu);
+      aHVector.push_back(true);
+      Desc[s2] = " ";
+   }
+   else {
+      _hu = theHVector[k];
+      iHVector = k;
+   }
+   HVectorName[s2] = nb_hvectors;
+   dn[s2].i = nb_hvectors;
+   dn[s2].dt = DataType::HVECTOR;
+   theHVector[iHVector]->setVectorName(s1);
+   vect_hist[s1] = s2;
    return 0;
 }
 
@@ -269,20 +396,21 @@ void data::setTab2Grid(OFELI::Tabulation* tab)
    }
    iGrid = ++nb_grids;
    string name = "G-"+to_string(iGrid);
-   grid_name.push_back(name);
+   NameGrid.push_back(name);
    theGrid.push_back(_theGrid);
+   aGrid.push_back(true);
    GridName[name] = dn[name].i = nb_grids;
    dn[name].dt = DataType::GRID;
 }
-    
-    
-void data::setTab2Field(OFELI::Tabulation* tab)
+
+
+void data::setTab2Vector(OFELI::Tabulation* tab)
 {
    int nb = tab->getNbVar(1);
    OFELI::fct &f = tab->Funct[0];
    int nx = f.Np[0], ny = f.Np[1], nz = f.Np[2];
-   addGridField(tab->getFunctName(1),1);
-   OFELI::Vect<double> *v = u[iField];
+   addGridVector(tab->getFunctName(1),1);
+   OFELI::Vect<double> *v = theVector[iVector];
 
    switch (nb) {
       case 1:
@@ -340,23 +468,27 @@ int data::checkParam(const string& name,
 int data::addAE(odae*  ae,
                 string name)
 {
-   if (AEName[name]==0) {
+   if (name=="")
+      name = "AE-" + to_string(nb_pde+1);
+   int i = AEName[name];
+   if (i==0 || aAE[i]==false) {
       iAE = ++nb_ae;
       iEq = ++nb_eq;
       eq_type.push_back(eqType::AE);
       eqq.push_back(iEq);
       AE.push_back(name);
       theAE.push_back(ae);
+      aAE.push_back(true);
+      Desc[name] = " ";
    }
    else {
-      iAE = AEName[name];
+      iAE = i;
       theAE[iAE] = ae;
    }
-   if (name=="")
-      name = "AE-"+to_string(iAE);
    AE[iAE] = name;
    AEName[name] = dn[name].i = nb_ae;
    dn[name].dt = DataType::AE;
+   ae->name = name;
    return iAE;
 }
 
@@ -364,23 +496,27 @@ int data::addAE(odae*  ae,
 int data::addODE(odae*  ode,
                  string name)
 {
-   if (ODEName[name]==0) {
+   if (name=="")
+      name = "ODE-" + to_string(nb_ode+1);
+   int i = ODEName[name];
+   if (i==0 || aODE[i]==false) {
       iODE = ++nb_ode;
       iEq = ++nb_eq;
       eq_type.push_back(eqType::ODE);
       eqq.push_back(iEq);
       ODE.push_back(name);
       theODE.push_back(ode);
+      aODE.push_back(true);
+      Desc[name] = " ";
    }
    else {
-      iODE = ODEName[name];
+      iODE = i;
       theODE[iODE] = ode;
    }
-   if (name=="")
-      name = "ODE-"+to_string(iODE);
    ODE[iODE] = name;
    ODEName[name] = dn[name].i = nb_ode;
    dn[name].dt = DataType::ODE;
+   ode->name = name;
    return iODE;
 }
 
@@ -388,20 +524,26 @@ int data::addODE(odae*  ode,
 int data::addPDE(equa*  pde,
                  string name)
 {
-   if (PDEName[name]==0) {
+   if (name=="")
+      name = "PDE-" + to_string(nb_pde+1);
+   int i = PDEName[name];
+   if (PDEName[name]==0 || aPDE[i]==false) {
       iPDE = ++nb_pde;
       iEq = ++nb_eq;
       eq_type.push_back(eqType::PDE);
       eqq.push_back(iEq);
       PDE.push_back(name);
       thePDE.push_back(pde);
+      aPDE.push_back(true);
+      Desc[name] = " ";
    }
    else {
-      iPDE = PDEName[name];
+      iPDE = i;
       thePDE[iPDE] = pde;
    }
    PDEName[name] = dn[name].i = nb_pde;
    dn[name].dt = DataType::PDE;
+   pde->name = name;
    return iPDE;
 }
 
@@ -412,19 +554,21 @@ int data::addFunction(const string&         def,
 {
    if (name=="")
       name = "F-" + to_string(nb_fcts+1);
-   _theFct = new OFELI::Fct(name,def,var);
-   if (FctName[name]==0) {
+   int i = FctName[name];
+   if (i==0 || aFct[i]==false) {
+      _theFct = new OFELI::Fct(name,def,var);
       iFct = ++nb_fcts;
-      fct_name.push_back(name);
+      NameFct.push_back(name);
       theFct.push_back(_theFct);
+      aFct.push_back(true);
+      Desc[name] = " ";
    }
    else {
-      cout << "Function "+name+" is redefined." << endl;
       _rita->msg("data>","Function "+name+" redefined.");
-      iFct = FctName[name];
+      iFct = i;
       theFct[iFct] = _theFct;
    }
-   fct_name[iFct] = name;
+   NameFct[iFct] = name;
    FctName[name] = dn[name].i = nb_fcts;
    dn[name].dt = DataType::FCT;
    return iFct;
@@ -434,13 +578,15 @@ int data::addFunction(const string&         def,
 int data::addMesh(OFELI::Mesh*  ms,
                   const string& name)
 {
-   if (MeshName[name]==0) {
+   int i = MeshName[name];
+   if (i==0 || aMesh[i]==false) {
       iMesh = ++nb_meshes;
       theMesh.push_back(ms);
-      mesh_name.push_back(name);
+      NameMesh.push_back(name);
+      aMesh.push_back(true);
    }
    else {
-      iMesh = MeshName[name];
+      iMesh = i;
       theMesh[iMesh] = ms;
    }
    MeshName[name] = dn[name].i = nb_meshes;
@@ -452,48 +598,181 @@ int data::addMesh(OFELI::Mesh*  ms,
 int data::addParam(const string& name,
                    double        value)
 {
-   _theParam = new double;
-   *_theParam = value;
-   if (ParamName[name]==0) {
-      iParam = ++nb_params;
-      Param.push_back(name);
+   int i = ParamName[name];
+   if (i==0 || aParam[i]==false) {
+      _theParam = new double;
       theParam.push_back(_theParam);
+      aParam.push_back(true);
+      Param.push_back(name);
+      iParam = ++nb_params;
+      dn[name].dt = DataType::PARAM;
+      ParamName[name] = dn[name].i = nb_params;
+      Desc[name] = " ";
    }
    else {
-      iParam = ParamName[name];
-      theParam[iParam] = _theParam;
+      iParam = i;
+      _theParam = theParam[iParam];
    }
-   ParamName[name] = dn[name].i = nb_params;
-   dn[name].dt = DataType::PARAM;
+   *_theParam = value;
    return iParam;
 }
 
 
-int data::addField(const string& name,
-                   int           n,
-                   string        file)
+int data::addVector(const string& name,
+                    double        t,
+                    int           n,
+                    string        file,
+                    bool          opt)
 {
-   if (file!="")
-      n = 1;
-   _u = new OFELI::Vect<double>(n);
-   if (file!="") {
-      OFELI::XMLParser xml(file,OFELI::XMLParser::MATRIX);
-      xml.get(*_u);
-   }
-   if (FieldName[name]==0) {
-      Field.push_back(name);
-      iField = ++nb_fields;
-      u.push_back(_u);
-      FieldSizeType.push_back(DataSize::GIVEN_SIZE);
+   int i = VectorName[name];
+   if (i==0 || aVector[i]==false) {
+      if (n==0)
+         _u = new OFELI::Vect<double>;
+      else
+         _u = new OFELI::Vect<double>(n);
+      if (file!="") {
+         OFELI::XMLParser xml(file,OFELI::XMLParser::FIELD);
+         xml.get(*_u);
+      }
+      Vector.push_back(name);
+      iVector = ++nb_vectors;
+      theVector.push_back(_u);
+      VectorTime.push_back(t);
+      aVector.push_back(true);
+      VectorSizeType.push_back(DataSize::GIVEN_SIZE);
+      Desc[name] = " ";
+      vect_hist[name] = "%$§&";
    }
    else {
-      iField = FieldName[name];
-      u[iField] = _u;
+      if (file!="") {
+         _u = theVector[i];
+         OFELI::XMLParser xml(file,OFELI::XMLParser::FIELD);
+         xml.get(*_u);
+      }
+      iVector = i;
+      *theVector[iVector] = *_u;
    }
-   FieldName[name] = nb_fields;
-   dn[name].i = nb_fields;
-   dn[name].dt = DataType::FIELD;
-   return iField;
+   VectorName[name] = nb_vectors;
+   dn[name].i = nb_vectors;
+   dn[name].dt = DataType::VECTOR;
+   if (!opt)
+      _rita->_calc->setVector(name,_u);
+   return iVector;
+}
+
+
+void data::setTime(string s,
+                   double t)
+{
+   int it = 0;
+   if ((it=checkName(s,DataType::VECTOR))) {
+      VectorTime[it] = t;
+   }
+}
+
+
+DataType data::getType(const string& s)
+{
+   if (checkName(s,DataType::PARAM))
+      return DataType::PARAM;
+   else if (checkName(s,DataType::VECTOR))
+      return DataType::VECTOR;
+   else if (checkName(s,DataType::MATRIX))
+      return DataType::MATRIX;
+   else if (checkName(s,DataType::GRID))
+      return DataType::GRID;
+   else if (checkName(s,DataType::MESH))
+      return DataType::MESH;
+   else if (checkName(s,DataType::FCT))
+      return DataType::FCT;
+   else if (checkName(s,DataType::TAB))
+      return DataType::TAB;
+   else
+      return DataType::NOTHING;
+}
+
+
+int data::remove(const string& name)
+{
+   DataType d = getType(name);
+   int i = 0;
+   if (d==DataType::PARAM) {
+      i = ParamName[name];
+      if (i>0) {
+         aParam[i] = false;
+         nb_params--;
+      }
+   }
+   else if (d==DataType::VECTOR) {
+      i = VectorName[name];
+      if (i>0) {
+         aVector[i] = false;
+         theVector[i]->clear();
+         nb_vectors--;
+      }
+   }
+   else if (d==DataType::MATRIX) {
+      i = MatrixName[name];
+      if (i>0) {
+         theMatrix[i]->setSize(0);
+         aMatrix[i] = false;
+         nb_matrices--;
+      }
+   }
+   else if (d==DataType::GRID) {
+      i = GridName[name];
+      if (i>0) {
+         aGrid[i] = false;
+         nb_grids--;
+      }
+   }
+   else if (d==DataType::MESH) {
+      i = MeshName[name];
+      if (i>0) {
+         aMesh[i] = false;
+         nb_meshes--;
+      }
+   }
+   else if (d==DataType::TAB) {
+      i = TabName[name];
+      if (i>0) {
+         aTab[i] = false;
+         nb_tabs--;
+      }
+   }
+   else if (d==DataType::FCT) {
+      i = FctName[name];
+      if (i>0) {
+         aFct[i] = false;
+         nb_fcts--;
+      }
+   }
+   else if (d==DataType::AE) {
+      i = AEName[name];
+      if (i>0) {
+         aAE[i] = false;
+         nb_ae--;
+      }
+   }
+   else if (d==DataType::ODE) {
+      i = ODEName[name];
+      if (i>0) {
+         aODE[i] = false;
+         nb_ode--;
+      }
+   }
+   else if (d==DataType::PDE) {
+      i = PDEName[name];
+      if (i>0) {
+         aPDE[i] = false;
+         nb_pde--;
+      }
+   }
+   else {
+      _rita->msg("","No data named "+name+" found");
+      return 1;
+   }
+   return 0;
 }
 
 
@@ -501,20 +780,30 @@ int data::addMatrix(string name,
                     int    nr,
                     int    nc,
                     string file,
-                    string s)
+                    string s,
+                    bool   opt)
 {
+   if (checkName(name,DataType::MATRIX,1)<0)
+      return 1;
    if (file!="")
       nr = 1, nc = 1;
    _theMatrix = new DMatrix<double>(nr,nc);
    if (file!="") {
+      ifstream f(file.c_str());
+      if (!f.good()) {
+         _rita->msg("","File "+file+" not found");
+         return 1;
+      }
       OFELI::XMLParser xml(file,OFELI::XMLParser::MATRIX);
       xml.get(_theMatrix);
    }
-   matrix_name.push_back(name);
+   NameMatrix.push_back(name);
    if (MatrixName[name]==0) {
       Matr.push_back(name);
       iMatrix = ++nb_matrices;
       theMatrix.push_back(_theMatrix);
+      aMatrix.push_back(true);
+      Desc[name] = " ";
    }
    else {
       iMatrix = MatrixName[name];
@@ -522,6 +811,8 @@ int data::addMatrix(string name,
    }
    MatrixName[name] = dn[name].i = nb_matrices;
    dn[name].dt = DataType::MATRIX;
+   if (!opt)
+      _rita->_calc->setMatrix(name,_theMatrix);
    return iMatrix;
 }
 
@@ -529,10 +820,14 @@ int data::addMatrix(string name,
 int data::addTab(OFELI::Tabulation* tab,
                  const string&      name)
 {
+   if (checkName(name,DataType::TAB,1)<0)
+      return 1;
    if (TabName[name]==0) {
-      tab_name.push_back(name);
+      NameTab.push_back(name);
       iTab = ++nb_tabs;
       theTab.push_back(tab);
+      aTab.push_back(true);
+      Desc[name] = " ";
    }
    else {
       iMatrix = TabName[name];
@@ -544,9 +839,9 @@ int data::addTab(OFELI::Tabulation* tab,
 }
 
 
-int data::addMeshField(const string& name,
-                       DataSize      s,
-                       int           nb_dof)
+int data::addMeshVector(const string& name,
+                        DataSize      s,
+                        int           nb_dof)
 {
    _theMesh = theMesh[iMesh];
    if (_theMesh==nullptr) {
@@ -556,44 +851,46 @@ int data::addMeshField(const string& name,
    }
    _u = new OFELI::Vect<double>;
    _nb_dof = nb_dof;
-   if (FieldName[name]==0) {
-      iField = ++nb_fields;
-      Field.push_back(name);
-      u.push_back(_u);
-      FieldType.push_back(eqType::PDE);
+   if (VectorName[name]==0) {
+      iVector = ++nb_vectors;
+      Vector.push_back(name);
+      theVector.push_back(_u);
+      aVector.push_back(true);
+      VectorType.push_back(eqType::PDE);
+      Desc[name] = " ";
    }
    else {
-      iField = FieldName[name];
-      u[iField] = _u;
-      FieldType[iField] = eqType::PDE;
+      iVector = VectorName[name];
+      theVector[iVector] = _u;
+      VectorType[iVector] = eqType::PDE;
    }
-   FieldName[name] = dn[name].i = nb_fields;
-   dn[name].dt = DataType::FIELD;
+   VectorName[name] = dn[name].i = nb_vectors;
+   dn[name].dt = DataType::VECTOR;
 
    if (s==DataSize::NODES) {
       if (_theMesh->getNbNodes()==0) {
-         _rita->msg("data>","Mesh has no nodes");
+         _rita->msg("","Mesh has no nodes");
          _ret = 1;
          return _ret;
       }
    }
    else if (s==DataSize::ELEMENTS) {
       if (_theMesh->getNbElements()==0) {
-         _rita->msg("data>","Mesh has no elements.");
+         _rita->msg("","Mesh has no elements.");
          _ret = 1;
          return _ret;
       }
    }
    else if (s==DataSize::SIDES) {
       if (_theMesh->getNbSides()==0) {
-         _rita->msg("data>","Mesh has no sides");
+         _rita->msg("","Mesh has no sides");
          _ret = 1;
          return _ret;
       }
    }
    else if (s==DataSize::EDGES) {
       if (_theMesh->getNbEdges()==0) {
-         _rita->msg("data>","Mesh has no edges");
+         _rita->msg("","Mesh has no edges");
          _ret = 1;
          return _ret;
       }
@@ -607,161 +904,40 @@ int data::addMeshField(const string& name,
       _u->setMesh(*_theMesh,SIDE_DOF,_nb_dof);
    else if (s==DataSize::EDGES)
       _u->setMesh(*_theMesh,EDGE_DOF,_nb_dof);
-   return iField;
+   return iVector;
 }
 
 
-int data::addGridField(const string& name,
-                       int           nb_dof)
+int data::addGridVector(const string& name,
+                        int           nb_dof)
 {
+   if (checkName(name,DataType::GRID,1)<0)
+      return 1;
    _theGrid = theGrid[iGrid];
    if (_theGrid==nullptr) {
-      _rita->msg("data>","No grid data available.");
+      _rita->msg("","No grid data available.");
       _ret = -1;
       return _ret;
    }
    _u = new OFELI::Vect<double>(*_theGrid);
    _nb_dof = nb_dof;
    _theGrid->setNbDOF(_nb_dof);
-   if (FieldName[name]==0) {
-      iField = ++nb_fields;
-      Field.push_back(name);
-      u.push_back(_u);
-      FieldType.push_back(eqType::PDE);
+   if (VectorName[name]==0) {
+      iVector = ++nb_vectors;
+      Vector.push_back(name);
+      theVector.push_back(_u);
+      aVector.push_back(true);
+      VectorType.push_back(eqType::PDE);
+      Desc[name] = " ";
    }
    else {
-      iField = FieldName[name];
-      u[iField] = _u;
-      FieldType[iField] = eqType::PDE;
+      iVector = VectorName[name];
+      theVector[iVector] = _u;
+      VectorType[iVector] = eqType::PDE;
    }
-   FieldName[name] = dn[name].i = nb_fields;
-   dn[name].dt = DataType::FIELD;
-   return iField;
-}
-
-
-int data::run()
-{
-   int key = 0;
-   string td = "", fn="";
-   static const vector<string> kw {"grid","mesh","field","tab$ulation","func$tion",
-                                   "vect$or","matr$ix","save","sum$mary","list"};
-   *_rita->ofh << "data" << endl;
-   while (1) {
-      if (_cmd->readline("rita>data> ")<0)
-         continue;
-
-      switch (key=_cmd->getKW(kw,_rita->_gkw)) {
-
-         case   0:
-            _ret = setGrid();
-            break;
-
-         case   1:
-            _ret = 10;
-            return _ret;
-
-         case   2:
-            _ret = setField();
-            break;
-
-         case   3:
-            _ret = setTab();
-            break;
-
-         case   4:
-            _ret = setFunction();
-            break;
-
-         case   5:
-            _ret = setVector();
-            break;
-
-         case   6:
-            _ret = setMatrix();
-            break;
-
-         case   7:
-            _ret = save();
-            break;
-
-         case   8:
-            Summary();
-            break;
-
-         case   9:
-            if (_cmd->setNbArg(1,"Type of data to list.")) {
-               _rita->msg("data>list>","Missing data type to list.","",1);
-               break;
-            }
-            _cmd->get(td);
-            if (td.substr(0,5)=="param")
-               ListParams(1);
-            else if (td.substr(0,4)=="grid")
-               ListGrids(1);
-            else if (td.substr(0,4)=="mesh")
-               ListMeshes(1);
-            else if (td.substr(0,4)=="vect")
-               ListVectors(1);
-            else if (td.substr(0,5)=="field")
-               ListFields(1);
-            else if (td.substr(0,5)=="funct")
-               ListFunctions(1);
-            else if (td.substr(0,3)=="tab")
-               ListTabs(1);
-            else if (td.substr(0,5)=="matri")
-               ListMatrices(1);
-            _ret = 0;
-            break;
-
-         case 100:
-         case 101:
-            _cmd->setNbArg(0);
-            getHelp();
-            break;
-
-         case 102:
-            _rita->getLicense();
-            break;
-
-         case 103:
-            _ret = _configure->run();
-            _verb = _configure->getVerbose();
-            break;
-
-         case 104:
-         case 105:
-            _rita->setParam();
-            break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               _rita->msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               print(fn);
-            break;
-
-         case 107:
-            Summary();
-            break;
-
-         case 108:
-         case 109:
-            _ret = 0;
-            ok = true;
-            *_rita->ofh << "  end" << endl;
-            return _ret;
-
-         default:
-            _rita->msg("data>","Unknown Command "+_cmd->token(),
-                       "Available commands: grid, mesh, field, tabulation, function, vector, matrix,"
-                       " save, summary, list");
-            break;
-      }
-   }
-   return 0;
+   VectorName[name] = dn[name].i = nb_vectors;
+   dn[name].dt = DataType::VECTOR;
+   return iVector;
 }
 
 
@@ -770,19 +946,17 @@ void data::getHelp()
    cout << "\nAvailable Commands in mode 'data':\n";
    cout << "grid:       Define a grid\n";
    cout << "mesh:       Define a finite element mesh (can be accessed from the top level)\n";
-   cout << "field:      Define a field (or vector)\n";
+   cout << "vector:     Define a vector\n";
    cout << "matrix:     Define a matrix\n";
    cout << "tabulation: Define a tabulation\n";
    cout << "function:   Define a function\n";
-   cout << "matrix:     Define a matrix\n";
    cout << "list:       List a specific entity\n";
    cout << "Global commands: \n";
    cout << "help or ?:  Display this help\n";
    cout << "set:        Set configuration data\n";
-   cout << "par or @:   Defined a parameter (constant)\n";
-   cout << "print       print a specific entity\n";
-   cout << "save        save a specific entity in file\n";
-   cout << "summary:    Summary of defined entities\n\n";
+   cout << "print:      print a specific entity\n";
+   cout << "save:       save a specific entity in file\n";
+   cout << "data:       Summary of defined entities\n\n";
    cout << "end or <:   Back to higher level\n";
    cout << "exit:       Terminate execution\n" << endl;
 }
@@ -795,10 +969,14 @@ void data::print(const string& s)
       cout << "Parameter: " << s << " = " << *theParam[k] << endl;
       return;
    }
-
-   k = checkName(s,DataType::FIELD);
+   k = checkName(s,DataType::VECTOR);
    if (k>0) {
-      cout << *u[k];
+      cout << *theVector[k];
+      return;
+   }
+   k = checkName(s,DataType::HVECTOR);
+   if (k>0) {
+      cout << *theHVector[k];
       return;
    }
    k = checkName(s,DataType::MATRIX);
@@ -827,12 +1005,27 @@ void data::print(const string& s)
       cout << *theFct[k];
       return;
    }
-   k = checkName(s,DataType::TAB);
+   k =  checkName(s,DataType::TAB);
    if (k>0) {
       cout << *theTab[k];
       return;
    }
-   cout << "Data " << s << " not found." << endl;
+   k =  checkName(s,DataType::AE);
+   if (k>0) {
+      cout << *theAE[k];
+      return;
+   }
+   k =  checkName(s,DataType::ODE);
+   if (k>0) {
+      cout << *theODE[k];
+      return;
+   }
+   k =  checkName(s,DataType::PDE);
+   if (k>0) {
+      cout << *thePDE[k];
+      return;
+   }
+   _rita->msg("","Entity/Data '"+s+"' not found");
 }
 
 
@@ -929,16 +1122,17 @@ int data::setGrid()
    else if (dim==2) {
       _theGrid = new OFELI::Grid(xmin,xmax,ymin,ymax,nx,ny);
       *_rita->ofh << "  min=" << xmin << "," << ymin << "  max=" << xmax << "," << ymax
-                 << "  ne=" << nx << "," << ny;
+                  << "  ne=" << nx << "," << ny;
    }
    else if (dim==3) {
       _theGrid = new OFELI::Grid(xmin,xmax,ymin,ymax,zmin,zmax,nx,ny,nz);
       *_rita->ofh << "  min=" << xmin << "," << ymin << "," << zmin << "  max=" << xmax
-                 << "," << ymax << "," << zmax << "  ne=" << nx << "," << ny << "," << nz;
+                  << "," << ymax << "," << zmax << "  ne=" << nx << "," << ny << "," << nz;
    }
    *_rita->ofh << endl;
    theGrid.push_back(_theGrid);
-   grid_name.push_back(name);
+   aGrid.push_back(true);
+   NameGrid.push_back(name);
    iGrid++;
    nb_grids++;
    return 0;
@@ -947,13 +1141,13 @@ int data::setGrid()
 
 int data::setVector()
 {
-   int nb=0;
+   int nb=0, size=0;
    string name="vect-"+to_string(nb_vectors+1);
    static const vector<string> kw {"name","size","def$ine","set"};
    _cmd->set(kw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args<=0) {
-      _rita->msg("data>vector>","Error in command.","Available arguments: name, size, define, set.");
+      _rita->msg("data>vector>","No argument given\nAvailable arguments: name, size, define, set.","");
       return 1;
    }
    for (int i=0; i<nb_args; ++i) {
@@ -965,7 +1159,7 @@ int data::setVector()
             break;
 
          case 1:
-	   //           size = _cmd->int_token(0);
+            size = _cmd->int_token(0);
             break;
 
          case 2:
@@ -980,11 +1174,9 @@ int data::setVector()
       }
    }
    if (nb_args>0) {
-      *_rita->ofh << endl;
+      addVector(name,0.,size);
+      *_rita->ofh << "  vector  size=" << size << "  name=" << name << endl;
    }
-   theVector.push_back(_theVector);
-   vector_name.push_back(name);
-   nb_vectors++;
    return 0;
 }
 
@@ -998,7 +1190,8 @@ int data::setMatrix()
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args<=0) {
-      _rita->msg("data>matrix>","Error in command.");
+      _rita->msg("data>matrix>","No agument given.\nAvailable arguments:"
+                                " name, file, storage, nr, nc, define, set.","");
       return 1;
    }
    for (int i=0; i<nb_args; ++i) {
@@ -1034,115 +1227,15 @@ int data::setMatrix()
             return 1;
       }
    }
-   if (file=="") {
-      _rita->msg("data>matrix>","No file name given for matrix input.");
+   if (file=="" && nr==0) {
+      _rita->msg("data>matrix>","Matrix must be given either by its size or read from a file.");
       return 1;
    }
    if (storage!="dense") {
       _rita->msg("data>matrix>","Only dense storage is allowed in the current release.");
       return 1;
    }
-
-   addMatrix(name,nr,nc,file,storage);
-   return 0;
-}
-
-
-int data::setField()
-{
-   int nb=0;
-   double umin=0., umax=0.;
-   string name="u", type="size", arg=" ", mn="";
-   static const vector<string> kw {"name","size","mesh","grid","nbdof","type","uniform"};
-   static const vector<string> types {"size","nodes","elements","sides","edges"};
-   map<string,DataSize> tt {{"size",DataSize::GIVEN_SIZE}, {"nodes",DataSize::NODES}, {"elements",DataSize::ELEMENTS},
-                            {"sides",DataSize::SIDES}, {"edges",DataSize::EDGES}};
-   if (theMesh[0]!=nullptr)
-      _theMesh = theMesh[0];
-   if (_default_field==1) {
-      iField = 0;
-      FieldName.clear();
-   }
-   _cmd->set(kw);
-   int nb_args = _cmd->getNbArgs();
-   if (nb_args<=0) {
-      _rita->msg("data>field>","Error in command.",
-                 "Available arguments: name, size, mesh, grid, nbdof, type, uniform.");
-      return 1;
-   }
-   for (int i=0; i<nb_args; ++i) {
-      int n = _cmd->getArg();
-      switch (n) {
-
-         case 0:
-            name = _cmd->string_token();
-            break;
-
-         case 1:
-            _size = _cmd->int_token();
-            type = "size";
-            break;
-
-         case 2:
-            mn = _cmd->string_token();
-	    //            mesh_ok = 1;
-            break;
-
-         case 3:
-            _nb_dof = _cmd->int_token();
-            break;
-
-         case 4:
-            _nb_dof = _cmd->int_token();
-            break;
-
-         case 5:
-            type = _cmd->string_token();
-            if (type!="size" && type!="nodes" && type!="elements" &&
-                type!="sides" && type!="edges") {
-               _rita->msg("data>field>","Unknown type: "+type);
-               return 0;
-            }
-            break;
-
-         case 6:
-            umin = _cmd->double_token();
-            if (nb>1)
-               umax = _cmd->double_token();
-	    //            uniform_ok = nb;
-            break;
-
-         default:
-            _rita->msg("data>field>","Unknown argument: "+kw[n]);
-            return 1;
-      }
-   }
-   if (nb_args>0) {
-      int k = 0;
-      if (type=="size")
-         addField(name,_size);
-      else
-         k = addMeshField(name,tt[type],_size);
-      if (k==0) {
-         if (_verb>1) {
-            if (type=="size") 
-               cout << "New field: " << name << ", size: " << _size << endl;
-            else
-               cout << "New field: " << name << ", Nb. of DOF: " << _nb_dof << endl;
-            cout << "Total number of fields: " << nb_fields << endl;
-         }
-         *_rita->ofh << "  field  name=" << name;
-         if (_size)
-            *_rita->ofh << " size=" << _size;
-         *_rita->ofh << " type=" << type << "  nbdof=" << _nb_dof << " min=" << umin << " max=" << umax;
-         nb_dof[iField] = _nb_dof;
-      /*      if (uniform==1) {
-         _rita->msg("data>field>","Minimal and maximal values must be given for field.");
-	 return 1;
-	 }*/
-         *_rita->ofh << endl;
-      }
-   }
+   addMatrix(name,nr,nc,file,storage,false);
    return 0;
 }
 
@@ -1154,12 +1247,12 @@ int data::setFunction()
    string vv="", def="", name="f";
    int nb=1;
    vector<string> var;
-   static const vector<string> kw {"name","var","field","nb","def","definition"};
+   static const vector<string> kw {"name","var$iable","vect$or","nb","def","definition"};
 
    _cmd->set(kw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args<0) {
-      _rita->msg("data>function>:","Error in command.");
+      _rita->msg("data>function>:","No argument given.\nAvailable arguments: name, variable, vector, nb, definition.","");
       return 1;
    }
    for (int i=0; i<nb_args; ++i) {
@@ -1240,38 +1333,6 @@ int data::setNbDOF()
    return _ret;
 }
 
-/*
-void data::Clear()
-{
-   *_rita->ofh << "  clear" << endl;
-   nb_fields = 0;
-   Field[0] = "u";
-   FieldName["u"] = 0;
-   FieldEquation[0] = 0;
-   if (_verb)
-      cout << "Field data cleared." << endl;
-   if (u[_ifield].size()>0) {
-      u[_ifield] = 0.;
-   }
-   if (bc[_ifield].size()>0) {
-      bc[_ifield] = 0.;
-      if (_verb)
-         cout << "Boundary condition vector cleared." << endl;
-   }
-   if (sf[_ifield].size()>0) {
-      sf[_ifield] = 0.;
-      if (_verb)
-         cout << "Surface force condition vector cleared." << endl;
-   }
-   if (bf[_ifield].size()>0) {
-      bf[_ifield] = 0.;
-      if (_verb)
-         cout << "Body force vector cleared." << endl;
-   }
-   _ifield = 0;
-   _ret = 90;
-}*/
-
 
 int data::setTab()
 {
@@ -1279,8 +1340,8 @@ int data::setTab()
    string file="";
    string name = "T" + to_string(theTab.size()+1);
    double xmin=0., xmax=1., ymin=0., ymax=1., zmin=0., zmax=1.;
-   int nb=0, nx=10, ny=10, nz=10, grid_ok=0, file_ok=0, field_ok=0;
-   static const vector<string> kw {"name","file","min","max","ne","field"};
+   int nb=0, nx=10, ny=10, nz=10, grid_ok=0, file_ok=0, vector_ok=0;
+   static const vector<string> kw {"name","file","min","max","ne","vector"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args<0) {
@@ -1332,7 +1393,7 @@ int data::setTab()
 
          case 5:
 	   //            fd = _cmd->string_token();
-            field_ok = true;
+            vector_ok = true;
             break;
 
          default:
@@ -1344,8 +1405,8 @@ int data::setTab()
       _rita->msg("data>tabulation>","No grid data given.");
       return 1;
    }
-   if (!field_ok && !file_ok) {
-      _rita->msg("data>tabulation>","No associated field given.");
+   if (!vector_ok && !file_ok) {
+      _rita->msg("data>tabulation>","No associated vector given.");
       return 1;
    }
    if (!file_ok && (dim1!=dim2 || dim1!=dim3 || dim2!=dim3)) {
@@ -1372,8 +1433,9 @@ int data::setTab()
       if (dim1==3)
          _theGrid = new OFELI::Grid(xmin,xmax,ymin,ymax,zmin,zmax,nx,ny,nz);
    }
-   tab_name.push_back(name);
+   NameTab.push_back(name);
    theTab.push_back(_theTab);
+   aTab.push_back(true);
    nb_tabs++;
    *_rita->ofh << endl;
    return 0;
@@ -1414,15 +1476,26 @@ int data::getPar(int n, const string& msg, double& v)
 }
 
 
+int data::setDesc(const string& name,
+                  const string& desc)
+{
+   if (getType(name)==DataType::NOTHING)
+      return 1;
+   Desc[name] = desc;
+   return 0;
+}
+
+
 int data::save()
 {
-   string name="", file="", format="", t="";
-   bool name_ok=false, file_ok=false, format_ok=true;
-   static const vector<string> kw {"name","file","format"};
+   string name="", file="", format="ofeli", t="";
+   double every=1, e=1;
+   bool name_ok=false, file_ok=false;
+   static const vector<string> kw {"name","file","format","every"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args==0) {
-      _rita->msg("data>save>","No argument given.");
+      _rita->msg("save>","No argument given.\nAvailable arguments: name, file, format, every.","");
       return 1;
    }
    for (int i=0; i<nb_args; ++i) {
@@ -1444,55 +1517,159 @@ int data::save()
          case 2:
             if ((t=_cmd->string_token())!="")
                format = t;
-            format_ok = true;
+            break;
+
+         case 3:
+            if ((e=_cmd->int_token())!=0)
+               every = e;
             break;
 
          default:
             _rita->msg("data>save>","Unknown argument.");
-            cout << "\nAvailable Arguments\n";
+            cout << "Usage: save name=na file=fi [format=ofeli] [frequency=1]\n";
+            cout << "Available Arguments\n";
             cout << "name: Name of entity to save\n";
-            cout << "file: File where to save datum" << endl;
+            cout << "file: File where to save data\n";
+            cout << "format: File format\n";
+            cout << "every: Frequency of saving (Default: 1)" << endl;
             _ret = 1;
             break;
       }
    }
    if (name_ok==false) {
-      _rita->msg("data>save>","No data to save.");
+      _rita->msg("save>","No data to save.");
+      return 1;
+   }
+   if (file_ok==false) {
+      _rita->msg("save>","No file given.");
       return 1;
    }
 
-   int k = checkName(name,DataType::FIELD);
+// Case of a parameter
+   int k = checkName(name,DataType::PARAM);
    if (k>0) {
-      OFELI::IOField ffo(file,OFELI::IOField::OUT);
-      ffo.put(*u[k]);
-      return 0;
+      _rita->msg("save>","Parameters cannot be saved.");
+      return 1;
    }
+
+// Save a vector
+   k = checkName(name,DataType::VECTOR);
+   if (k>0) {
+      if (format=="ofeli") {
+         OFELI::IOField ffo(file,OFELI::IOField::OUT);
+         ffo.put(*theVector[k]);
+         return 0;
+      }
+      else if (format=="gmsh") {
+         int ret = saveGmsh(file,*theVector[k]);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in gmsh format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="vtk") { 
+         int ret = saveVTK(file,*theVector[k]);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in gmsh format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="tecplot") { 
+         int ret = saveTecplot(file,*theVector[k]);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in gmsh format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="gnuplot") {
+         ofstream ffo(file);
+         ffo << endl;
+         return 0;
+      }
+   }
+
+// Save a history vector
+   k = checkName(name,DataType::HVECTOR);
+   if (k>0) {
+      if (format=="ofeli") {
+         int ret = theHVector[k]->saveOFELI(file,every);
+         return ret;
+      }
+      else if (format=="gmsh") {
+         int ret = theHVector[k]->saveGmsh(file,every);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in gmsh format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="vtk") {
+         int ret = theHVector[k]->saveVTK(file,every);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in vtk format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="tecplot") {
+         int ret = theHVector[k]->saveTecplot(file,every);
+         if (ret==1) {
+            _rita->msg("data>save>","Cannot save in vtk format a vector without mesh association.");
+            return 1;
+         }
+      }
+      else if (format=="gnuplot") {
+         int ret = theHVector[k]->saveGnuplot(file,every);
+         return ret;
+      }
+   }
+
+// Save a matrix
    k = checkName(name,DataType::MATRIX);
    if (k>0) {
       OFELI::saveMatrix(theMatrix[k],file);
       return 0;
    }
+
+// Save a mesh
    k = checkName(name,DataType::MESH);
    if (k>0) {
-      saveMesh(file,*theMesh[k],GMSH);
-      return 0;
+      if (format=="ofeli") {
+         saveMesh(file,*theMesh[k],OFELI_FF);
+         return 0;
+      }
+      else if (format=="gmsh") {
+         saveMesh(file,*theMesh[k],GMSH);
+         return 0;
+      }
+      else if (format=="vtk") {
+         saveMesh(file,*theMesh[k],VTK);
+         return 0;
+      }
+      else if (format=="gnuplot") {
+         saveMesh(file,*theMesh[k],GNUPLOT);
+         return 0;
+      }
    }
+
+// Save a grid
    k = checkName(name,DataType::GRID);
    if (k>0) {
       _rita->msg("data>save>","This option is not yet implemented.");
-      return 0;
+      return 1;
    }
+
+// Case of a function
    k = checkName(name,DataType::FCT);
    if (k>0) {
-      _rita->msg("data>save>","This type of data cannot be saved in file.");
-      return 0;
+      _rita->msg("save>","Functions cannot be saved.");
+      return 1;
    }
+
+// Save a tabulation
    k = checkName(name,DataType::TAB);
    if (k>0) {
-      _rita->msg("data>save>","This type of data cannot be saved in file.");
+      _rita->msg("save>","This type of data cannot be saved in file.");
       return 0;
    }
-   _rita->msg("data>save>","No data entity "+name+" found.");
    return 1;
 }
 
@@ -1504,24 +1681,42 @@ void data::ListParams(int opt)
       return;
    }
    cout << "Number of defined parameters: " << nb_params << endl;
-   for (int i=1; i<=nb_params; ++i)
-      cout << Param[i] << " = " << *theParam[i] << endl;
+   for (int i=1; i<theParam.size(); ++i)
+      if (aParam[i]) {
+         cout << Param[i] << " = " << *theParam[i] << endl;
+         if (Desc[Param[i]]!=" ")
+            cout << "Description: " << Desc[Param[i]] << endl;
+      }
 }
 
 
-void data::ListFields(int opt)
+void data::ListVectors(int opt)
 {
-   if (opt && !nb_fields) {
-      cout << "No defined fields." << endl;
+   if (opt && !nb_vectors) {
+      cout << "No defined vectors." << endl;
       return;
    }
-   cout << "Number of fields: " << nb_fields << endl;
-   for (int k=1; k<=nb_fields; ++k) {
-      if (FieldSizeType[k]==DataSize::GIVEN_SIZE)
-         cout << "Field: " << Field[k] << ", Size: " << u[k]->size() << endl;
-      else
-         cout << "Field: " << Field[k] << ", Number of degrees of freedom: " << nb_dof[k] << endl;
+   cout << "Number of vectors: " << nb_vectors << endl;
+   for (int k=1; k<theVector.size(); ++k) {
+      if (aVector[k]) {
+         if (VectorSizeType[k]==DataSize::GIVEN_SIZE)
+            cout << "Vector: " << Vector[k] << ", Size: " << theVector[k]->size() << endl;
+         else
+            cout << "Vector: " << Vector[k] << ", Number of degrees of freedom: " << nb_dof[k] << endl;
+      }
    }
+}
+
+
+void data::ListHVectors(int opt)
+{
+   if (opt && !nb_hvectors) {
+      cout << "No defined history vectors." << endl;
+      return;
+   }
+   cout << "Number of history vectors: " << nb_hvectors << endl;
+   for (int k=1; k<theHVector.size(); ++k)
+      cout << "History Vector: " << HVector[k] << ", Size: " << theHVector[k]->size() << endl;
 }
 
 
@@ -1532,12 +1727,14 @@ void data::ListFunctions(int opt)
       return;
    }
    cout << "Number of functions: " << nb_fcts << endl;
-   for (int k=1; k<=nb_fcts; ++k) {
-      Fct *f = theFct[k];
-      cout << "Function: " << f->name << ", Variable(s): ";
-      for (int j=0; j<int(f->nb_var)-1; ++j)
-         cout << f->var[j] << ",";
-      cout << f->var[theFct[k]->nb_var-1] << ", Definition: " << f->expr << endl;
+   for (int k=1; k<theFct.size(); ++k) {
+      if (aFct[k]) {
+         Fct *f = theFct[k];
+         cout << "Function: " << f->name << ", Variable(s): ";
+         for (int j=0; j<int(f->nb_var)-1; ++j)
+            cout << f->var[j] << ",";
+         cout << f->var[theFct[k]->nb_var-1] << ", Definition: " << f->expr << endl;
+      }
    }
 }
 
@@ -1549,20 +1746,11 @@ void data::ListTabs(int opt)
       return;
    }
    cout << "Number of tabulations: " << nb_tabs << endl;
-   for (int i=1; i<=nb_tabs; ++i) {
-      cout << "Tabulation: " << tab_name[i] << ", Nb. of variables: " 
-           << theTab[i]->getNbVar(1) << ", Size: " << theTab[i]->getSize(1,1) << endl;
+   for (int i=1; i<theTab.size(); ++i) {
+      if (aTab[i])
+         cout << "Tabulation: " << NameTab[i] << ", Nb. of variables: " 
+              << theTab[i]->getNbVar(1) << ", Size: " << theTab[i]->getSize(1,1) << endl;
    }
-}
-
-
-void data::ListVectors(int opt)
-{
-   if (opt && !nb_tabs) {
-      cout << "No defined vectors." << endl;
-      return;
-   }
-   cout << "Number of vectors: " << nb_vectors << endl;
 }
 
 
@@ -1573,9 +1761,10 @@ void data::ListMatrices(int opt)
       return;
    }
    cout << "Number of matrices: " << nb_matrices << endl;
-   for (int i=1; i<=nb_matrices; ++i) {
-      cout << "Matrix: " << Matr[i] << ", Size: " << theMatrix[i]->getNbRows()
-           << " x " << theMatrix[i]->getNbColumns() << endl;
+   for (int i=1; i<theMatrix.size(); ++i) {
+      if (aMatrix[i])
+         cout << "Matrix: " << Matr[i] << ", Size: " << theMatrix[i]->getNbRows()
+              << " x " << theMatrix[i]->getNbColumns() << endl;
    }
 }
 
@@ -1587,28 +1776,30 @@ void data::ListGrids(int opt)
       return;
    }
    cout << "Number of grids: " << nb_grids << endl;
-   for (int k=1; k<=nb_grids; ++k) {
-      OFELI::Grid *g = theGrid[k];
-      cout << "Grid No.            " << k << endl;
-      cout << "Grid name:          " << grid_name[k] << endl;
-      cout << "Space dimension:    " << g->getDim() << endl;
-      if (g->getDim()==1) {
-         cout << "Domain:                    (" << g->getX(1) << ","
-              << g->getX(theGrid[k]->getNx()+1) << ")" << endl;
-         cout << "Number of intervals:    " << g->getNx() << endl;
-      }
-      else if (g->getDim()==2) {
-         cout << "Domain:                    (" << g->getX(1) << ","
-              << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
-              << g->getY(g->getNy()+1) << ")" << endl;
-         cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << endl;
-      }
-      else if (g->getDim()==3) {
-         cout << "Domain:                    (" << g->getX(1) << ","
-              << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
-              << g->getY(g->getNy()+1) << ")x(" << g->getZ(1) << ","
-              << g->getZ(g->getNz()+1) << ")" << endl;
-         cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << " x " << g->getNz() << endl;
+   for (int k=1; k<theGrid.size(); ++k) {
+      if (aGrid[k]) {
+         OFELI::Grid *g = theGrid[k];
+         cout << "Grid No.            " << k << endl;
+         cout << "Grid name:          " << NameGrid[k] << endl;
+         cout << "Space dimension:    " << g->getDim() << endl;
+         if (g->getDim()==1) {
+            cout << "Domain:                    (" << g->getX(1) << ","
+                 << g->getX(theGrid[k]->getNx()+1) << ")" << endl;
+            cout << "Number of intervals:    " << g->getNx() << endl;
+         }
+         else if (g->getDim()==2) {
+            cout << "Domain:                    (" << g->getX(1) << ","
+                 << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
+                 << g->getY(g->getNy()+1) << ")" << endl;
+            cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << endl;
+         }
+         else if (g->getDim()==3) {
+            cout << "Domain:                    (" << g->getX(1) << ","
+                 << g->getX(g->getNx()+1) << ")x(" << g->getY(1) << ","
+                 << g->getY(g->getNy()+1) << ")x(" << g->getZ(1) << ","
+                 << g->getZ(g->getNz()+1) << ")" << endl;
+            cout << "Number of intervals:    " << g->getNx() << " x " << g->getNy() << " x " << g->getNz() << endl;
+         }
       }
    }
 }
@@ -1621,13 +1812,15 @@ void data::ListMeshes(int opt)
       return;
    }
    cout << "Number of meshes: " << nb_meshes << endl;
-   for (int k=1; k<=nb_meshes; ++k) {
-      OFELI::Mesh *m = theMesh[k];
-      cout << "Mesh No.            " << k << endl;
-      cout << "Mesh name:          " << mesh_name[k] << endl;
-      cout << "Number of nodes:    " << m->getNbNodes() << endl;
-      cout << "Number of elements: " << m->getNbElements() << endl;
-      cout << "Number of sides:    " << m->getNbSides() << endl;
+   for (int k=1; k<theMesh.size(); ++k) {
+      if (aMesh[k]) {
+         OFELI::Mesh *m = theMesh[k];
+         cout << "Mesh No.            " << k << endl;
+         cout << "Mesh name:          " << NameMesh[k] << endl;
+         cout << "Number of nodes:    " << m->getNbNodes() << endl;
+         cout << "Number of elements: " << m->getNbElements() << endl;
+         cout << "Number of sides:    " << m->getNbSides() << endl;
+      }
    }
 }
 
@@ -1639,12 +1832,14 @@ void data::ListODE(int opt)
       return;
    }
    cout << "Number of ordinary differential equations: " << nb_ode << endl;
-   for (int k=1; k<=nb_ode; ++k) {
-      odae *ode = theODE[k];
-      cout << "ODE No.            " << k << endl;
-      cout << "ODE name:          " << ODE[k] << endl;
-      if (ode->size>1)
-         cout << "Size:           " << ode->size << endl;
+   for (int k=1; k<theODE.size(); ++k) {
+      if (aODE[k]) {
+         odae *ode = theODE[k];
+         cout << "ODE No.            " << k << endl;
+         cout << "ODE name:          " << ODE[k] << endl;
+         if (ode->size>1)
+            cout << "Size:           " << ode->size << endl;
+      }
    }
 }
 
@@ -1656,14 +1851,17 @@ void data::ListPDE(int opt)
       return;
    }
    cout << "Number of partial differential equations: " << nb_pde << endl;
-   for (int k=1; k<=nb_pde; ++k) {
-      equa *e = thePDE[k];
-      cout << "PDE No.            " << k << endl;
-      cout << "  PDE name: " << e->eq << endl;
-      cout << "  PDE unknown field(s): ";
-      for (int i=0; i<e->nb_fields-1; ++i)
-         cout << e->fd[i].fn << ", ";
-      cout << e->fd[nb_fields-1].fn << endl;
+   for (int k=1; k<thePDE.size(); ++k) {
+      if (aPDE[k]) {
+         equa *e = thePDE[k];
+         cout << "  PDE No.            " << k << endl;
+         cout << "  PDE name: " << e->name << endl;
+         cout << "  PDE id: " << e->eq << endl;
+         cout << "  PDE unknown vector(s): ";
+         for (int i=0; i<e->nb_vectors-1; ++i)
+            cout << e->fd[i].fn << ", ";
+         cout << e->fd[nb_vectors-1].fn << endl;
+      }
    }
 }
 
@@ -1675,30 +1873,32 @@ void data::ListAE(int opt)
       return;
    }
    cout << "Number of algebraic equations: " << nb_ae << endl;
-   for (int k=1; k<=nb_ae; ++k) {
-      odae *ae = theAE[k];
-      cout << "Algebraic System No.   " << k << endl;
-      cout << "Algebraic System name: " << AE[k] << endl;
-      if (ae->size>1)
-         cout << "Size:           " << ae->size << endl;
-      if (ae->isFct) {
-         if (ae->size==1)
-            cout << "Equation defined by function: " << ae->theFct[0].name << endl;
-         else {
-            for (int i=0; i<ae->size; ++i)
+   for (int k=1; k<=theAE.size(); ++k) {
+      if (aAE[k]) {
+         odae *ae = theAE[k];
+         cout << "Algebraic System No.   " << k << endl;
+         cout << "Algebraic System name: " << AE[k] << endl;
+         if (ae->size>1)
+            cout << "Size:           " << ae->size << endl;
+         if (ae->isFct) {
+            if (ae->size==1)
+               cout << "Equation defined by function: " << ae->theFct[0].name << endl;
+            else {
+               for (int i=0; i<ae->size; ++i)
                cout << "Equation: " << i+1 << ", defined by function: " << ae->theFct[i].name << endl;
-         }
-      }
-      else {
-         if (ae->size==1) {
-            cout << "Equation defined by: " << ae->theFct[0].expr << endl;
-            cout << "Variable is          " << ae->theFct[0].var[0] << endl;
+            }
          }
          else {
-            for (int i=0; i<ae->size; ++i) 
-               cout << "Equation: " << i+1 << ", defined by: " << ae->theFct[i].expr << endl;
-            for (int i=0; i<ae->size; ++i)
-               cout << "Variable " << i+1 << " is " << ae->theFct[0].var[i] << endl;
+            if (ae->size==1) {
+               cout << "Equation defined by: " << ae->theFct[0].expr << endl;
+               cout << "Variable is          " << ae->theFct[0].var[0] << endl;
+            }
+            else {
+               for (int i=0; i<ae->size; ++i) 
+                  cout << "Equation: " << i+1 << ", defined by: " << ae->theFct[i].expr << endl;
+               for (int i=0; i<ae->size; ++i)
+                  cout << "Variable " << i+1 << " is " << ae->theFct[0].var[i] << endl;
+            }
          }
       }
    }
@@ -1707,32 +1907,301 @@ void data::ListAE(int opt)
 
 void data::Summary()
 {
-   if (nb_fields+nb_params+nb_fields+nb_matrices+nb_fcts+nb_tabs+nb_grids+nb_meshes+
-       nb_ae+nb_ode+nb_pde==0) {
+   if (nb_params+nb_vectors+nb_matrices+nb_fcts+nb_tabs+nb_grids+nb_meshes+
+      nb_ae+nb_ode+nb_pde==0) {
       cout << "No defined data." << endl;
       return;
    }
    cout << "SUMMARY OF DATA:" << endl;
    cout << "---------------------------------------------------------------" << endl;
-   ListParams(0);
-   cout << endl;
-   ListFields(0);
-   cout << endl;
-   ListMatrices(0);
-   cout << endl;
-   ListFunctions(0);
-   cout << endl;
-   ListTabs(0);
-   cout << endl;
-   ListGrids(0);
-   cout << endl;
-   ListMeshes(0);
-   cout << endl;
-   ListAE(0);
-   cout << endl;
-   ListODE(0);
-   cout << endl;
-   ListPDE(0);
+   if (nb_params) {
+      ListParams(0);
+      cout << endl;
+   }
+   if (nb_vectors) {
+      ListVectors(0);
+      cout << endl;
+   }
+   if (nb_matrices) {
+      ListMatrices(0);
+      cout << endl;
+   }
+   if (nb_hvectors) {
+      ListHVectors(0);
+      cout << endl;
+   }
+   if (nb_fcts) {
+      ListFunctions(0);
+      cout << endl;
+   }
+   if (nb_tabs) {
+      ListTabs(0);
+      cout << endl;
+   }
+   if (nb_grids) {
+      ListGrids(0);
+      cout << endl;
+   }
+   if (nb_meshes) {
+      ListMeshes(0);
+      cout << endl;
+   }
+   if (nb_ae) {
+      ListAE(0);
+      cout << endl;
+   }
+   if (nb_ode) {
+      ListODE(0);
+      cout << endl;
+   }
+   if (nb_pde)
+      ListPDE(0);
+   cout << "---------------------------------------------------------------" << endl;
+}
+
+
+int data::saveGmsh(const string &file, const Vect<double>& v)
+{
+   using namespace OFELI;
+   int nb_en=0;
+   ofstream ff(file);
+
+   if (v.WithMesh()==false)
+      return 1;
+   Mesh &ms = v.getMesh();
+   int nb_dof = v.getNbDOF();
+   ff << "View \"" << v.getName() << "\" {" << endl;
+   switch (ms.getDim()) {
+
+      case 1:
+         element_loop(&ms) {
+            ff << "SL(";
+            ff << The_element(1)->getX() <<  ", 0., 0., "
+               << The_element(2)->getX() <<  ", 0., 0. ) {" << endl;
+            ff << v(The_element(1)->n(),1) << "," << v(The_element(2)->n(),1);
+            ff << endl;
+         }
+         ff << "};" << endl;
+         break;
+
+      case 2:
+         element_loop(&ms) {
+            if (nb_dof==1)
+               ff << 'S';
+            else
+               ff << 'V';
+            int nb_en=The_element.getNbNodes();
+            if (nb_en==3)
+               ff << "T(";
+            else if (nb_en==4)
+               ff << "Q(";
+            for (int k=1; k<nb_en; ++k)
+               ff << The_element(k)->getX() << "," << The_element(k)->getY() << ",0.,";
+            ff << The_element(nb_en)->getX() << "," << The_element(nb_en)->getY() << ",0.) {" << endl;
+            for (int k=1; k<=nb_en; ++k) {
+               ff << v(The_element(k)->n(),1);
+               if (nb_dof > 1)
+                  ff << "," << v(The_element(k)->n(),2) << ",0.0";
+               if (k<nb_en)
+                  ff << ",";
+            }
+            ff << "};" << endl;
+         }
+         ff << "};" << endl;
+            break;
+
+         case 3:
+            element_loop(&ms) {
+               if (nb_dof==1)
+                  ff << 'S';
+               else
+                  ff << 'V';
+               if ((nb_en=The_element.getNbNodes())==4)
+                  ff << "S(";
+               else if (nb_en==8)
+                  ff << "H(";
+               else if (nb_en==6)
+                  ff << "I(";
+               else if (nb_en==5)
+                  ff << "Y(";
+               for (int k=1; k<=nb_en-1; ++k)
+                  ff << The_element(k)->getX() << ","
+                     << The_element(k)->getY() << ","
+                     << The_element(k)->getZ() << ",";
+               ff << The_element(nb_en)->getX() << ","
+                  << The_element(nb_en)->getY() << ","
+                  << The_element(nb_en)->getZ() << ") {" << endl;
+               for (int k=1; k<=nb_en; ++k) {
+                  ff << v(The_element(k)->n(),1);
+                  if (nb_dof > 1)
+                     ff << "," << v(The_element(k)->n(),1) << ","
+                        << v(The_element(k)->n(),3) << endl;
+               }
+               ff << "};" << endl;
+            }
+            ff << "};" << endl;
+            break;
+      }
+      return 0;
+}
+
+
+int data::saveVTK(const string &file, const Vect<double>& v)
+{
+   using namespace OFELI;
+   map<int,int> shCode = {{LINE,2},{TRIANGLE,3},{QUADRILATERAL,4},{TETRAHEDRON,4},
+                          {HEXAHEDRON,8},{PENTAHEDRON,6}};
+   map<int,int> ShCode = {{LINE,3},{TRIANGLE,5},{QUADRILATERAL,9},{TETRAHEDRON,10},
+                          {HEXAHEDRON,12},{PENTAHEDRON,13}};
+
+   if (v.WithMesh()==false)
+      return 1;
+   int nb_dof = v.getNbDOF();
+   Mesh &ms = v.getMesh();
+   int sz=0;
+   element_loop(&ms)
+      sz += shCode[The_element.getShape()] + 1;
+   ofstream ff(file.c_str());
+   ff << setprecision(16) << std::scientific;
+   ff << "# vtk DataFile Version 2.0\n# Imported from OFELI files\nASCII" << endl;
+   ff << "DATASET UNSTRUCTURED_GRID\nPOINTS " << ms.getNbNodes() << " double" << endl;
+   node_loop(&ms)
+      ff << The_node.getX() << "  " << The_node.getY() << "  " << The_node.getZ() << endl;
+   ff << "\nCELLS " << ms.getNbElements() << setw(10) << sz << endl;
+   element_loop(&ms) {
+      ff << setw(8) << shCode[The_element.getShape()];
+      for (int i=1; i<=shCode[The_element.getShape()]; ++i)
+         ff << setw(10) << The_element(i)->n()-1;
+      ff << endl;
+   }
+   ff << "\nCELL_TYPES  " << ms.getNbElements() << endl;
+   int k=0;
+   element_loop(&ms) {
+      ff << setw(4) << ShCode[The_element.getShape()];
+      if (++k%30 == 0)
+         ff << endl;
+   }
+   ff << "\nPOINT_DATA  " << ms.getNbNodes() << endl;
+
+   if (nb_dof==1)
+      ff << "SCALARS  " << v.getName()<< "  double  1\nLOOKUP_TABLE  default" << endl;
+   else
+      ff << "VECTORS  " << v.getName() << "  double" << endl;
+
+   node_loop(&ms) {
+      ff << v(node_label,1) << " ";
+      if (nb_dof>1) {
+         ff << v(node_label,2) << " ";
+         if (nb_dof > 2)
+            ff << v(node_label,3) << " ";
+         else
+            ff << 0. << " ";
+      }
+      ff << endl;
+   }
+   return 0;
+}
+
+
+int data::saveTecplot(const string& file, const Vect<double>& v)
+{
+   using namespace OFELI;
+   map<int,string> shape = {{LINE,"LINESEG"},{QUADRILATERAL,"QUADRILATERAL"},{TRIANGLE,"TRIANGLE"},
+                            {TETRAHEDRON,"TETRAHEDRON"},{HEXAHEDRON,"HEXAHEDRON"},{PENTAHEDRON,"HEXAHEDRON"}};
+   if (v.WithMesh()==false)
+      return 1;
+   int nb_dof = v.getNbDOF();
+   Mesh &ms = v.getMesh();
+   ofstream ff(file.c_str());
+   ff.setf(ios::right|ios::scientific);
+   ff << "TITLE = \" \"\n\nVARIABLES = \"X\", \"Y\"";
+   if (ms.getDim()==3)
+      ff << ", \"Z\"";
+   if (nb_dof==1)
+      ff << ", \"T\"";
+   else if (nb_dof==2)
+      ff << ", \"UX\", \"UY\"";
+   else if (nb_dof==3)
+      ff << ", \"UX\", \"UY\", \"UZ\"";
+   ff << "\n\nZONE T=\"" << "step-1" << "\", N=" << ms.getNbNodes() << ", E="
+      << ms.getNbElements() << ", F=FEPOINT, ET=" << shape[ms.getShape()]
+      << ", SOLUTIONTIME=" << v.getTime();
+   ff << ", D=(1,";
+   if (ms.getDim()>1)
+      ff << "2,";
+   if (ms.getDim()==3)
+      ff << "3,";
+   ff << "FECONNECT)";
+   ff << endl;
+   node_loop(&ms) {
+      for (int i=1; i<=ms.getDim(); i++)
+         ff << "  " << The_node.getCoord(i);
+         for (int j=0; j<nb_dof; j++)
+             ff << "  " << v[nb_dof*(node_label-1)+j];
+         ff << endl;
+   }
+   element_loop(&ms) {
+      for (int i=1; i<=The_element.getNbNodes(); ++i)
+         ff << setw(10) << The_element(i)->n();
+      ff << endl;
+   }
+   ff.close();
+   return 0;
+}
+
+
+odae::odae()
+     : isSet(false), log(false), isFct(false), vect(-1)
+{
+   every = 1;
+}
+
+
+void odae::setVars(int opt)
+{
+   if (opt)
+      vars.push_back("t");
+   if (size==1)
+      vars.push_back(fn);
+   else {
+      for (int i=0; i<size; ++i)
+         vars.push_back(fn+to_string(i+1));
+   }
+}
+
+
+ostream& operator<<(ostream& s, const odae& e)
+{
+   map<NonLinearIter,string> Nls = {{BISECTION,"bisection"},
+                                    {REGULA_FALSI,"regula-falsi"},
+                                    {PICARD,"picard"},
+                                    {SECANT,"secant"},
+                                    {NEWTON,"newton"}};
+   if (e.type==DataType::AE) {
+      s << "Algebraic Equation Name: " << e.name << endl;
+      s << "Size: " << e.size << endl;
+      if (e.size==1)
+         s << "Variable: " << e.fn << endl;
+      else {
+         s << "Variable(s): ";
+         for (int i=0; i<e.size-1; ++i)
+            s << e.vars[i] << ", ";
+         s << e.vars[e.size-1] << endl;
+      }
+      s << "Nonlinear iteration procedure: " << Nls[e.nls] << endl;
+
+   }
+   else if (e.type==DataType::ODE) {
+      s << "Ordinary Differential Equation Name: " << e.name << endl;
+      s << "Size: " << e.size << endl;
+      s << "Name of variable(s): " << e.fn << endl;
+      s << "Time integration scheme: " << e.scheme << endl;
+      s << "Initial time: " << e.init_time << endl;
+      s << "Final time: " << e.final_time << endl;
+      s << "Time step: " << e.time_step << endl;
+      s << "Nonlinear iteration procedure: " << Nls[e.nls] << endl;
+   }
+   return s;
 }
 
 } /* namespace RITA */

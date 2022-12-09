@@ -3,7 +3,7 @@
 #
 optim
   size 2
-  field x
+  vector x
   obj "3*x1 + sqrt(3)*x2"
   le-constraint "6*sqrt(3)/x2 + 18/x1 - 3"
   penal 1.e02
@@ -13,5 +13,5 @@ optim
   end
 solve
   run
-  display
+= x
 exit

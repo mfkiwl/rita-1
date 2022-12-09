@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -41,9 +41,16 @@ using std::endl;
 using std::cerr;
 using std::string;
 
+#include "../muparserx/mpParser.h"
+#include "../muparserx/mpDefines.h"
+#include "../muparserx/mpTest.h"
+
+#include "help.h"
 #include "ritaException.h"
+#include "data.h"
 #include "OFELI.h"
 
+const string sPrompt = "rita>";
 
 namespace RITA {
 /*!
@@ -51,9 +58,8 @@ namespace RITA {
  *  @{
  */
 
-
 class cmd;
-class data;
+//class data;
 class calc;
 class configure;
 class transient;
@@ -84,21 +90,6 @@ class equa;
 #define NO_AE   cout << "No algebraic equation defined." << endl;
 #define NO_ODE  cout << "No ordinary differential equation defined." << endl;
 #define NO_PDE  cout << "No partial differential equation defined." << endl;
-
-struct odae {
-   bool isSet, log, isFct;
-   vector<string> analytic, vars;
-   vector<OFELI::Fct> theFct;
-   OFELI::Vect<double> y;
-   OFELI::Vect<string> J;
-   double init_time, final_time, time_step;
-   OFELI::TimeScheme scheme;
-   int size, field, ind_fct;
-   NonLinearIter nls;
-   string fn;
-   odae();
-   void setVars(int opt);
-};
 
 enum type {
    NONE            = 0,
@@ -151,7 +142,7 @@ class rita
    calc *_calc;
    odae *_ae;
    equa *_pde;
-   string _script_file, _scheme;
+   string _script_file, _scheme, _sLine;
    ifstream _icf, *_in;
    cmd *_cmd;
    int _verb, _ret, _opt;
@@ -167,7 +158,7 @@ class rita
    integration *_integration;
    double _init_time, _time_step, _final_time;
    int _adapted_time_step, _nb_eigv, _nb_args;
-   bool _eigen_vectors, _default_field;
+   bool _eigen_vectors, _default_vector;
    bool _analysis_ok;
    int _dim, _analysis_type;
 
@@ -180,10 +171,8 @@ class rita
 
    void getLicense();
    void Load();
-   void setCalc();
    void setData();
-   void setParam();
-   void setMesh();
+   int setMesh();
    void setStationary();
    void setTransient();
    void setEigen();
@@ -196,10 +185,20 @@ class rita
    void setSolve();
    int set_ls(string ls, string prec);
    int set_nls(string nls);
-   int findField(const string& s);
+   int findVector(const string& s);
+   int parse();
+   void setParse();
+   int CheckKeywords();
+   void ListConst();
+   void ListVar();
+   void ListExprVar();
    void msg(const string& loc, const string& m1, const string& m2="", int c=0);
 
-   const vector<string> _gkw {"?","help","lic$ense","set","par$ameter","@","print","summary","end","<"};
+   const vector<string> _rita_kw {"load","unload","stat$ionary","trans$ient","eigen","optim",
+                                  "approx$imation","integ$ration","algebraic","ode","pde","solve"};
+   const vector<string> _gkw {"?","help","lic$ense","set","end","<"};
+   const vector<string> _data_kw {"grid","mesh","vect$or","tab$ulation","func$tion","matr$ix","save",
+                                  "remove","desc$ription","hist$ory","data","list","print","="};
    map<string,OFELI::Iteration> Ls = {{"direct",OFELI::DIRECT_SOLVER},
                                       {"cg",OFELI::CG_SOLVER},
                                       {"cgs",OFELI::CGS_SOLVER},
@@ -212,22 +211,22 @@ class rita
                                        {OFELI::BICG_SOLVER,"bicg"},
                                        {OFELI::BICG_STAB_SOLVER,"bicg-stab"},
                                        {OFELI::GMRES_SOLVER,"gmres"}};
-   map<std::string,NonLinearIter> NLs = {{"bisection",BISECTION},
-                                         {"regula-falsi",REGULA_FALSI},
-                                         {"picard",PICARD},
-                                         {"secant",SECANT},
-                                         {"newton",NEWTON}};
-   map<std::string,OFELI::TimeScheme> _sch = {{"forward-euler",OFELI::FORWARD_EULER},
-                                              {"backward-euler",OFELI::BACKWARD_EULER},
-                                              {"crank-nicolson",OFELI::CRANK_NICOLSON},
-                                              {"heun",OFELI::HEUN},
-                                              {"newmark",OFELI::NEWMARK},
-                                              {"leap-frog",OFELI::LEAP_FROG},
-                                              {"AB2",OFELI::ADAMS_BASHFORTH},
-                                              {"RK4",OFELI::RK4},
-                                              {"RK3-TVD",OFELI::RK3_TVD},
-                                              {"BDF2",OFELI::BDF2},
-                                              {"builtin",OFELI::BUILTIN}};
+   map<string,NonLinearIter> NLs = {{"bisection",BISECTION},
+                                    {"regula-falsi",REGULA_FALSI},
+                                    {"picard",PICARD},
+                                    {"secant",SECANT},
+                                    {"newton",NEWTON}};
+   map<string,OFELI::TimeScheme> _sch = {{"forward-euler",OFELI::FORWARD_EULER},
+                                         {"backward-euler",OFELI::BACKWARD_EULER},
+                                         {"crank-nicolson",OFELI::CRANK_NICOLSON},
+                                         {"heun",OFELI::HEUN},
+                                         {"newmark",OFELI::NEWMARK},
+                                         {"leap-frog",OFELI::LEAP_FROG},
+                                         {"AB2",OFELI::ADAMS_BASHFORTH},
+                                         {"RK4",OFELI::RK4},
+                                         {"RK3-TVD",OFELI::RK3_TVD},
+                                         {"BDF2",OFELI::BDF2},
+                                         {"builtin",OFELI::BUILTIN}};
    map<string,OFELI::Preconditioner> Prec = {{"ident",OFELI::IDENT_PREC},
                                              {"diag",OFELI::DIAG_PREC},
                                              {"dilu",OFELI::DILU_PREC},

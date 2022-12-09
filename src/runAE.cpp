@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -28,6 +28,7 @@
 
 #include "rita.h"
 #include "data.h"
+#include "calc.h"
 #include "cmd.h"
 #include "configure.h"
 
@@ -38,10 +39,10 @@ namespace RITA {
 
 int rita::runAE()
 {
-   string str = "", var_name = "x", nls = "newton", fn="";
-   bool field_ok = false;
+   string str = "", var_name = "x", nls = "newton", ae_name="";
+   bool vector_ok = false;
    int ret=0, size=1, ind=-1, n=0;
-   int count_field=0, count_fct=0, count_def=0, count_J=0, count_init=0;
+   int count_vector=0, count_fct=0, count_def=0, count_J=0, count_init=0;
    _ret = 0;
    vector<string> def, var, name;
    vector<double> init;
@@ -54,8 +55,8 @@ int rita::runAE()
       _analysis_type = STEADY_STATE;
 
    const static vector<string> kw {"size","func$tion","def$inition","jacob$ian","init",
-                                   "var$iable","field","nls","summary","clear","remove"};
-   _cmd->set(kw,_gkw);
+                                   "var$iable","vect$or","nls","summary","clear","remove"};
+   _cmd->set(kw,_gkw,_data_kw);
    for (int k=0; k<_nb_args; ++k) {
 
       switch (_cmd->getArg("=")) {
@@ -66,7 +67,7 @@ int rita::runAE()
 
          case 1:
             name.push_back(_cmd->string_token());
-            count_fct++, field_ok = true;
+            count_fct++, vector_ok = true;
             break;
 
          case 2:
@@ -83,7 +84,7 @@ int rita::runAE()
          case 5:
          case 6:
             var_name = _cmd->string_token();
-            field_ok = true;
+            vector_ok = true;
             break;
 
          case 7:
@@ -101,11 +102,11 @@ int rita::runAE()
          msg("algebraic>","Illegal size value.");
          return 1;
       }
-      if (count_fct && count_field) {
+      if (count_fct && count_vector) {
          msg("algebraic>","Function already defined in data module.");
          return 1;
       }
-      if (count_field>1) {
+      if (count_vector>1) {
          msg("algebraic>","Only one variable must be defined for an algebraic system.");
          return 1;
       }
@@ -117,7 +118,7 @@ int rita::runAE()
          msg("algebraic>","Number of function names is larger than system size.");
          return 1;
       }
-      if (!field_ok) {
+      if (!vector_ok) {
          msg("algebraic>","Missing a variable name.");
          return 1;
       }
@@ -158,6 +159,7 @@ int rita::runAE()
          _ae->isFct = false;
          *ofh << " var=" << var_name;
          var.clear();
+         _ae->fn = var_name;
          if (size==1)
             var.push_back(var_name);
          else {
@@ -166,7 +168,7 @@ int rita::runAE()
          }
          for (int i=0; i<size; ++i) {
             _data->addFunction(def[i],var);
-            _ae->theFct[i].set(_data->fct_name[_data->iFct],def[i],var,1);
+            _ae->theFct[i].set(_data->NameFct[_data->iFct],def[i],var,1);
          }
          _ae->ind_fct = ind;
          for (int j=0; j<size; ++j)
@@ -176,10 +178,10 @@ int rita::runAE()
       _ae->J.setSize(size,size);
       _ae->isSet = true;
       _ae->log = false;
-      _data->addField(var_name,size);
-      _data->FieldEquation[_data->iField] = _data->iEq;
-      _ae->field = _data->iField;
-      _data->FieldType.push_back(data::eqType::AE);
+      _data->addVector(var_name,0.,size);
+      _data->VectorEquation[_data->iVector] = _data->iEq;
+      _ae->vect = _data->iVector;
+      _data->VectorType.push_back(data::eqType::AE);
       for (const auto& v: init) {
          *ofh << " init=" << v;
          _ae->y.push_back(v);
@@ -187,17 +189,23 @@ int rita::runAE()
       _ae->nls = NLs[nls];
       _ae->isFct = false;
       *ofh << " nls=" << nls << endl;
-      _data->addAE(_ae);
+      _ae->type = DataType::AE;
+      _data->addAE(_ae,ae_name);
    }
 
    else {
       *ofh << "algebraic " << endl;
-      count_fct = count_init = count_field = count_def = count_J = 0;
+      count_fct = count_init = count_vector = count_def = count_J = 0;
       int key = 0;
       while (1) {
-         if (_cmd->readline("rita>algebraic> ")<0)
+         if (_cmd->readline(sPrompt+"algebraic> ")<0)
             continue;
-         switch (key=_cmd->getKW(kw,_gkw)) {
+         key = _cmd->getKW(kw,_gkw,_data_kw);
+         if (key>=200) {
+            _data->setDataExt(key);
+            continue;
+         }
+         switch (key) {
 
             case   0:
                if (_cmd->setNbArg(1,"Size of algebraic system to be given.")) {
@@ -236,7 +244,7 @@ int rita::runAE()
                if (!ret) {
                   *ofh << "  function " << str << endl;
                   name[count_fct++] = str;
-                  field_ok = true;
+                  vector_ok = true;
                   if (_ae->theFct[count_fct].set(str,_data->theFct[ind]->expr,_data->theFct[ind]->var,1)) {
                      msg("algebraic>function>","Error in function evaluation: "+_ae->theFct[count_fct].getErrorMessage());
                      return 1;
@@ -319,12 +327,12 @@ int rita::runAE()
                   msg("algebraic>variable>","Equation must be defined first.");
                   break;
                }
-               if (_cmd->setNbArg(1,"Give name of associated field.")) {
+               if (_cmd->setNbArg(1,"Give name of associated vector.")) {
                   msg("algebraic>variable>","Missing name of associated variable.","",1);
                   break;
                }
                if (_cmd->get(var_name)) {
-                  msg("algebraic>variable>","Unknown variable or field "+var_name);
+                  msg("algebraic>variable>","Unknown variable or vector "+var_name);
                   break;
                }
                else {
@@ -334,7 +342,7 @@ int rita::runAE()
                         cout << var_name + to_string(i) << ", ";
                      cout << var_name + to_string(size) << endl;
                   }
-                  count_field++, field_ok = true;
+                  count_vector++, vector_ok = true;
                   *ofh << "  variable " << var_name << endl;
                }
                break;
@@ -409,7 +417,7 @@ int rita::runAE()
                   if (e==n-1) {
                      if (_data->eq_type[e]==data::eqType::AE) {
                         _data->theAE[e] = nullptr;
-                        _data->iField--;
+                        _data->iVector--;
                      }
                   }
                   else {
@@ -428,7 +436,7 @@ int rita::runAE()
                cout << "function:   Name of already defined function\n";
                cout << "definition: Give function expression F to define the algebraic equation F(x)=0\n";
                cout << "jacobian:   Define jacobian of mapping (for the Newton's algorithm)\n";
-               cout << "variable:   Variable (field) name as unknown of the equation\n";
+               cout << "variable:   Variable (vector) name as unknown of the equation\n";
                cout << "init:       Initial guess for iterations\n";
                cout << "nls:        Nonlinear equation iteration solver\n";
                cout << "summary:    Summary of Algebraic equation attributes\n";
@@ -445,26 +453,8 @@ int rita::runAE()
 
             case 104:
             case 105:
-               setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                _cmd->setNbArg(0);
-               if (!field_ok || (!count_fct && !count_def)) {
+               if (!vector_ok || (!count_fct && !count_def)) {
                   msg("algebraic>end>","Algebraic equation incompletely defined.");
                   NO_AE
                   return 1;
@@ -474,12 +464,12 @@ int rita::runAE()
                   *ofh << "  end" << endl;
                   break;
                }
-               if (count_fct && count_field) {
+               if (count_fct && count_vector) {
                   msg("algebraic>end>","Function already defined in data module.");
                   NO_AE
                   return 1;
                }
-               if (count_field>1) {
+               if (count_vector>1) {
                   msg("algebraic>end>","Only one variable must be defined for an algebraic system.");
                   NO_AE
                   return 1;
@@ -521,16 +511,19 @@ int rita::runAE()
                      for (int j=1; j<=size; ++j)
                         _ae->J(i,j) = J(i,j);
                }
-               _data->addField(var_name,size);
-               _ae->field = _data->iField;
-               _data->FieldType.push_back(data::eqType::AE);
+               _data->addVector(var_name,0.,size);
+               _ae->fn = var_name;
+               _ae->vect = _data->iVector;
+               _data->VectorType.push_back(data::eqType::AE);
                _ae->isSet = true;
                _ae->log = false;
                _ae->nls = NLs[nls];
-               _data->FieldEquation[_data->iField] = _data->iEq;
+               _data->VectorEquation[_data->iVector] = _data->iEq;
                _ae->isFct = false;
                if (count_fct)
                   _ae->isFct = true;
+               _ae->type = DataType::AE;
+               _ae->setVars(0);
                _data->addAE(_ae);
                _ret = 0;
                return _ret;
@@ -541,9 +534,7 @@ int rita::runAE()
                break;
 
             default:
-               msg("algebraic>","Unknown Command "+_cmd->token(),
-                   "Available commands: size, function, definition, jacobian, init,\n"
-                   "                    variable, nls, summary, clear, remove");
+               _ret = _calc->run();
                break;
          }
       }

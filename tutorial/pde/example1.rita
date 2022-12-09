@@ -5,7 +5,7 @@
 # Associate code 1 to end nodes enforce Dirichlet bc later
 #
 # First we define as parameter the number of elements
-param n=10
+n=10
 #
 # We enter module 'mesh'
 # End nodes are assigned code 1 to enforce boundary conditions
@@ -22,7 +22,7 @@ mesh
 pde laplace
 
 # We first define the unknown (mandatory)
-  field u
+  variable u
 
 # Nodes with code 1 are imposed the value 0
   bc code=1 val=0.
@@ -39,7 +39,7 @@ pde laplace
 solve
   run
 # print solution
-  display
+  = u
 
 # To test accuracy, set analytical solution and compute error in L2 and max norms
   analytic definition=sin(pi*x)

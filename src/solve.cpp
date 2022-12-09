@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -30,6 +30,7 @@
 #include "solve.h"
 #include "configure.h"
 #include "data.h"
+#include "calc.h"
 #include "equa.h"
 #include "stationary.h"
 #include "transient.h"
@@ -61,22 +62,22 @@ int solve::run()
    _nb_eq = _data->getNbEq();
    string fn="";
    int eq=1, i=0;
-   static const vector<string> kw {"select","run","save","disp$lay","plot","analytic","error","post"};
+   static const vector<string> kw {"select","run","plot","analytic","error","post"};
    if ((_rita->_analysis_type==STEADY_STATE||_rita->_analysis_type==TRANSIENT) && _nb_eq==0) {
       _rita->msg("solve>","No equation defined.");
       _ret = 1;
       return _ret;
    }
-   _nb_fields = _data->nb_fields;
-   if (_nb_fields==0) {
-      _rita->msg("solve>","No field defined or no problem to solve.");
+   _nb_vectors = _data->nb_vectors;
+   if (_nb_vectors==0) {
+      _rita->msg("solve>","No vector defined or no problem to solve.");
       _ret = 1;
       return _ret;
    }
-   _fformat.resize(_nb_fields+1);
-   _isave.resize(_nb_fields+1,0);
-   _save_file.resize(_nb_fields+1);
-   _phase_file.resize(_nb_fields+1);
+   _fformat.resize(_nb_vectors+1);
+   _isave.resize(_nb_vectors+1,0);
+   _save_file.resize(_nb_vectors+1);
+   _phase_file.resize(_nb_vectors+1);
    for (int e=1; e<=_data->nb_ae; ++e)
       _data->theAE[e]->analytic.resize(_data->theAE[e]->size);
    for (int e=1; e<=_data->nb_ode; ++e)
@@ -85,8 +86,8 @@ int solve::run()
       if (_data->thePDE[e]->log.fail()) {
          if (_data->thePDE[e]->log.pde)
             _rita->msg("solve>","No PDE defined for equation "+to_string(e)+". Solution procedure aborted.");
-         else if (_data->thePDE[e]->log.field)
-            _rita->msg("solve>","Field definition incorrect for equation "+to_string(e)+". Solution procedure aborted.");
+         else if (_data->thePDE[e]->log.vect)
+            _rita->msg("solve>","Vector definition incorrect for equation "+to_string(e)+". Solution procedure aborted.");
          else if (_data->thePDE[e]->log.spd)
             _rita->msg("solve>","No space discretization method available for PDE "+to_string(e)+". Solution procedure aborted.");
          else if (_data->thePDE[e]->log.ls)
@@ -103,10 +104,15 @@ int solve::run()
    }
 
    while (1) {
-      int nb = _cmd->readline("rita>solve> ");
+      int nb = _cmd->readline(sPrompt+"solve> ");
       if (nb<0)
          continue;
-      switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
+      _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+      if (_key>=200) {
+         _data->setDataExt(_key);
+         continue;
+      }
+      switch (_key) {
 
          case   0:
             if (_cmd->setNbArg(1)==0)
@@ -143,19 +149,10 @@ int solve::run()
             break;
 
          case   2:
-            save();
-            break;
-
-         case   3:
-            *_rita->ofh << "  display" << endl;
-            display();
-            break;
-
-         case   4:
             _ret = plot();
             break;
 
-         case   5:
+         case   3:
             if (_verb)
                cout << "Setting analytical solution ..." << endl;
             *_rita->ofh << "  analytic" << endl;
@@ -163,7 +160,7 @@ int solve::run()
             _set_analytic = true;
             break;
 
-         case   6:
+         case   4:
             if (_verb)
                cout << "Computing error ..." << endl;
             eq = 1, i = 0;
@@ -175,7 +172,7 @@ int solve::run()
             get_error(eq,i);
             break;
 
-         case   7:
+         case   5:
             if (_verb)
                cout << "Setting post calculations ..." << endl;
             *_rita->ofh << "  post" << endl;
@@ -187,8 +184,6 @@ int solve::run()
             cout << "\nAvailable Commands:\n";
             cout << "select:   Select equation (or system of equations) to solve (Default: last defined equation)\n";
             cout << "run:      Run the model\n";
-            cout << "save:     Save output, can be executed before run\n";
-            cout << "display:  Print solution and related data\n";
             cout << "plot:     Plot solution\n";
             cout << "analytic: Give analytic solution to test accuracy\n";
             cout << "error:    Compute error in various norms\n";
@@ -209,24 +204,6 @@ int solve::run()
 
          case 104:
          case 105:
-            _rita->setParam();
-            break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               _rita->msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case 107:
-            _data->Summary();
-            break;
-
-         case 108:
-         case 109:
             if (_verb>1)
                cout << "Getting back to higher level ..." << endl;
             *_rita->ofh << "  end" << endl;
@@ -237,9 +214,7 @@ int solve::run()
             break;
 
          default:
-            _rita->msg("solve>","Unknown command: "+_cmd->token(),
-                       "Available commands for this mode:\n"
-                       "run, save, display, plot, analytic, error, post");
+            _rita->_calc->run();
             break;
       }
    }
@@ -262,7 +237,7 @@ int solve::run_steady()
 int solve::run_transient()
 {
    transient *ts = new transient(_rita);
-   ts->setSave(_isave,_fformat,_save_file,_phase,_phase_file);
+//   ts->setSave(_isave,_fformat,_save_file,_phase,_phase_file);
    for (int e=1; e<=_data->nb_ae; ++e) {
    }
    for (int e=1; e<=_data->nb_ode; ++e) {
@@ -304,15 +279,15 @@ int solve::run_eigen()
    }
    es.run();
    for (int i=1; i<=_eigen->nb_eigv; ++i) {
-      (*_data->u[_data->FieldName[_eigen->eval+"-r"]])(i) = es.getEigenValue(i,1);      
-      (*_data->u[_data->FieldName[_eigen->eval+"-i"]])(i) = es.getEigenValue(i,2);      
+      (*_data->theVector[_data->VectorName[_eigen->eval+"-r"]])(i) = es.getEigenValue(i,1);      
+      (*_data->theVector[_data->VectorName[_eigen->eval+"-i"]])(i) = es.getEigenValue(i,2);      
       if (_eigen->eig_vec) {
-         es.getEigenVector(i,*(_data->u[_data->FieldName[_eigen->evect+"-"+to_string(i)+"r"]]),
-                             *(_data->u[_data->FieldName[_eigen->evect+"-"+to_string(i)+"i"]]));
+         es.getEigenVector(i,*(_data->theVector[_data->VectorName[_eigen->evect+"-"+to_string(i)+"r"]]),
+                             *(_data->theVector[_data->VectorName[_eigen->evect+"-"+to_string(i)+"i"]]));
       }
    }
-   cout << "Eigenvalues saved in vectors: " << _eigen->eval+"-r, " << _eigen->eval+"-i" << endl;
-   cout << "Eigenvectors saved in vectors: " << _eigen->evect+"-*r*, " << _eigen->evect+"-*i*, " << endl;
+   cout << "Eigenvalues stored in vectors: " << _eigen->eval+"-r, " << _eigen->eval+"-i" << endl;
+   cout << "Eigenvectors stored in vectors: " << _eigen->evect+"-*r*, " << _eigen->evect+"-*i*, " << endl;
    return 0;
 }
 
@@ -329,7 +304,7 @@ int solve::run_optim()
       if (_optim->lp) {
          OFELI::LPSolver s;
          s.setSize(size,_optim->nb_lec,_optim->nb_gec,_optim->nb_eqc);
-         s.set(*_data->u[_data->iField]);
+         s.set(*_data->theVector[_data->iVector]);
          s.set(OFELI::LPSolver::OBJECTIVE,_optim->a,_optim->b);
          for (int i=0; i<_optim->nb_eqc; ++i)
             s.set(OFELI::LPSolver::EQ_CONSTRAINT,*_optim->a_eq[i],_optim->b_eq[i]);
@@ -343,7 +318,7 @@ int solve::run_optim()
             _optim->solved = true;
       }
       else {
-         OFELI::OptSolver s(*_data->u[_data->iField]);
+         OFELI::OptSolver s(*_data->theVector[_data->iVector]);
          s.setOptMethod(_optim->Alg);
          s.setObjective(*_optim->J_Fct);
          if (_optim->G_ok) {
@@ -363,6 +338,7 @@ int solve::run_optim()
          if (!s.run()) {
             _optim->obj = s.getObjective();
             _optim->solved = true;
+            cout << "Optimization variable stored in vector: " << _data->Vector[_data->iVector] << endl;
          }
       }
    } CATCH
@@ -372,24 +348,24 @@ int solve::run_optim()
 
 void solve::save()
 {
-   int k=0, freq=1, eq=0, field_ok=0;
+   int k=0, freq=1, eq=0, vector_ok=0;
    string file="rita-1.pos", fformat="gmsh", ext="", fd="u", phase_f="";
    _phase = false;
-   if (_nb_fields==1) {
-      fd = _data->Field[1];
-      eq = _data->FieldEquation[1];
+   if (_nb_vectors==1) {
+      fd = _data->Vector[1];
+      eq = _data->VectorEquation[1];
       _fformat[1] = GNUPLOT;
       _save_file[1] = "u.dat";
       _isave[1] = 1;
-      field_ok = 1;
+      vector_ok = 1;
 /*      if (_data->eq_type[0]==data::eqType::PDE) {
-         _fformat[_data->iField] = GMSH;
-         _save_file[_data->iField] = "u.pos";
+         _fformat[_data->iVector] = GMSH;
+         _save_file[_data->iVector] = "u.pos";
       }*/
    }
    _ret = 0;
 
-   static const vector<string> kw {"field","format","freq$uency","phase","file"};
+   static const vector<string> kw {"vect$or","format","freq$uency","phase","file"};
    _cmd->set(kw);
    int nb_args = _cmd->getNbArgs();
    for (int i=0; i<nb_args; ++i) {
@@ -398,7 +374,7 @@ void solve::save()
 
          case 0:
             fd = _cmd->string_token();
-            field_ok = 2;
+            vector_ok = 2;
             break;
 
          case 1:
@@ -424,23 +400,23 @@ void solve::save()
       }
    }
    if (nb_args>0) {
-      if (_data->nb_fields==0) {
-         _rita->msg("solve>","No field to save.");
+      if (_data->nb_vectors==0) {
+         _rita->msg("solve>","No vector to save.");
          _ret = 1;
          return;
       }
-      if (!field_ok) {
-         _rita->msg("solve>:","No field name given.");
+      if (!vector_ok) {
+         _rita->msg("solve>:","No vector name given.");
          _ret = 1;
          return;
       }
-      k = _data->checkField(fd);
+      k = _data->checkName(fd,DataType::VECTOR);
       if (k<0) {
-         _rita->msg("solve>:","Unknown field: "+fd);
+         _rita->msg("solve>:","Unknown vector: "+fd);
          _ret = 1;
          return;
       }
-      eq = _data->FieldEquation[k];
+      eq = _data->VectorEquation[k];
       if (_data->eq_type[eq]==data::eqType::PDE) {
          _isave[k] = freq;
          _fformat[k] = GMSH;
@@ -451,21 +427,21 @@ void solve::save()
          _fformat[k] = GNUPLOT;
          _save_file[k] = fd + ".dat";
       }
-      eq = _data->FieldEquation[k];
+      eq = _data->VectorEquation[k];
       if (_data->eq_type[eq]!=data::eqType::PDE && fformat != "gnuplot") {
          _rita->msg("solve>save>","Only Gnuplot format is available for this type of equation.");
          _ret = 1;
          return;
       }
-      if (!_ret)
+/*      if (!_ret)
          _fformat[k] = _ff[fformat];
       else {
          _rita->msg("solve>save>","Unknown file format: "+fformat);
          _ret = 1;
          return;
-      }
+      }*/
       _save_file[k] = file;
-      *_rita->ofh << "  save field=" << fd << " file=" << file << " format=" << fformat
+      *_rita->ofh << "  save vector=" << fd << " file=" << file << " format=" << fformat
                   << " frequency=" << freq;
       if (_phase) {
          _phase_file[k] = phase_f;
@@ -533,46 +509,46 @@ void solve::setAnalytic()
 void solve::display(int f)
 {
    if (f==-1)
-      f = _data->iField;
-   if (_data->FieldType[f]==data::eqType::AE) {
-      if (_data->u[f]->size()==1)
-         cout << "Solution of algebraic equation: " << (*_data->u[f])[0] << endl;
+      f = _data->iVector;
+   if (_data->VectorType[f]==data::eqType::AE) {
+      if (_data->theVector[f]->size()==1)
+         cout << "Solution of algebraic equation: " << (*_data->theVector[f])[0] << endl;
       else {
          cout << "Solution of algebraic equation: " << endl;
-         for (size_t i=0; i<_data->u[f]->size(); ++i)
-            cout << (*_data->u[f])[i] << endl;
+         for (size_t i=0; i<_data->theVector[f]->size(); ++i)
+            cout << (*_data->theVector[f])[i] << endl;
       }
    }
-   else if (_data->FieldType[f]==data::eqType::ODE) {
-      if (_data->u[f]->size()==1)
+   else if (_data->VectorType[f]==data::eqType::ODE) {
+      if (_data->theVector[f]->size()==1)
          cout << "Solution of ordinary differential equation: "
-              << (*_data->u[f])[0] << endl;
+              << (*_data->theVector[f])[0] << endl;
       else {
          cout << "Solution of ordinary differential equation: " << endl;
-         for (size_t i=0; i<_data->u[f]->size(); ++i)
-            cout << (*_data->u[f])[i] << endl;
+         for (size_t i=0; i<_data->theVector[f]->size(); ++i)
+            cout << (*_data->theVector[f])[i] << endl;
       }
    }
-   else if (_data->FieldType[f]==data::eqType::PDE) {
+   else if (_data->VectorType[f]==data::eqType::PDE) {
       cout << "Solution of partial differential equation: " << endl;
-      cout << "Solution vector:\n" << *_data->u[f];
+      cout << "Solution vector:\n" << *_data->theVector[f];
    }
-   else if (_data->FieldType[f]==data::eqType::OPT) {
+   else if (_data->VectorType[f]==data::eqType::OPT) {
       if (!_optim->solved) {
          _rita->msg("solve>display>","Optimization problem ot properly solved.");
          _ret = 1;
          return;
       }
-      if (_data->u[f]->size()==1)
-         cout << "Solution of optimization problem: " << (*_data->u[f])[0] << endl;
+      if (_data->theVector[f]->size()==1)
+         cout << "Solution of optimization problem: " << (*_data->theVector[f])[0] << endl;
       else {
          cout << "Solution of optimization problem: " << endl;
-         for (size_t i=0; i<_data->u[f]->size(); ++i)
-            cout << (*_data->u[f])[i] << endl;
+         for (size_t i=0; i<_data->theVector[f]->size(); ++i)
+            cout << (*_data->theVector[f])[i] << endl;
       }
       cout << "Optimal objective: " << _rita->_optim->obj << endl;
    }
-   else if (_data->FieldType[f]==data::eqType::EIGEN) {
+   else if (_data->VectorType[f]==data::eqType::EIGEN) {
       _eigen->verbose = 2;
       cout << *_eigen;
    }
@@ -581,7 +557,7 @@ void solve::display(int f)
 
 int solve::plot()
 {
-   OFELI::saveField(*_data->u[1],"rita.pos",GMSH);
+   OFELI::saveField(*_data->theVector[1],"rita.pos",GMSH);
    string com = "gmsh rita.pos";
    int ret = system(com.c_str());
    remove("rita.pos");
@@ -653,7 +629,7 @@ void solve::get_error(int eq, int i)
          for (int i=0; i<nb_dof; ++i) {
             _theFct.set(_pde->analytic[i]);
             for (int n=1; n<=int(theMesh->getNbNodes()); ++n) {
-               double u = (*_data->u[eq])(n,i+1);
+               double u = (*_data->theVector[eq])(n,i+1);
                double v = _theFct((*theMesh)[n]->getCoord());
                err2 += (u-v)*(u-v);
                errI  = std::max(fabs(u-v),errI);

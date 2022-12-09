@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -48,7 +48,7 @@ class stationary
 
     rita *_rita;
     data *_data;
-    int _nb_fields, _rs;
+    int _nb_vectors, _rs;
     vector<int> *_fformat, *_isave;
     vector<string> *_save_file;
     equa *_pde_eq;

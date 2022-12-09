@@ -4,12 +4,10 @@
 # The default domain is the interval (0,1)
 # Associate code 1 to end nodes enforce Dirichlet bc later
 #
-# We enter module calc to define some mesh parameters
-calc
-  n = 10
-  xm = 0
-  xM = 2
-  end
+# We define some mesh parameters
+n = 10
+xm = 0
+xM = 2
 #
 # We enter module 'mesh'
 mesh
@@ -19,7 +17,7 @@ mesh
 
 # Define equation: (see pde section)
 pde laplace
-  field u
+  variable u
   bc code=1 val=0.
   source value=pi*pi*sin(pi*x)
   space feP1

@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -129,7 +129,7 @@ int configure::run()
    if (nb_args < 0)
       return 1;
    if (nb_args==0) {
-      cout << "In rita>set>: No argument for command! " << endl;
+      cout << "In " + sPrompt + " set>: No argument for command! " << endl;
       cout << "Available settings: verbosity, save-results, history, log" << endl;
       return 0;
    }

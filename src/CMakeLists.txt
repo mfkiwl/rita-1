@@ -6,7 +6,7 @@
 #
 # ==============================================================================
 #
-#   Copyright (C) 2021 - 2022  Rachid Touzani
+#   Copyright (C) 2021 - 2023  Rachid Touzani
 #
 #   This file is part of rita.
 #
@@ -37,6 +37,7 @@ endif ()
 add_executable (rita)
 
 target_sources (${PROJECT_NAME} PRIVATE
+                main.cpp
                 rita.cpp
                 approximation.cpp
                 calc.cpp

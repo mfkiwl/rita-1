@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -34,7 +34,7 @@ namespace RITA {
 
 equa::equa(rita *r)
      : eq("laplace"), nls(""), axi(false),
-       ls(CG_SOLVER), prec(DILU_PREC), _nb_fields(0), _data(r->_data), _theMesh(nullptr),
+       ls(CG_SOLVER), prec(DILU_PREC), _nb_vectors(0), _data(r->_data), _theMesh(nullptr),
        _theGrid(nullptr)
 {
    _rita = r;
@@ -43,6 +43,8 @@ equa::equa(rita *r)
    _rho_set = _Cp_set = _kappa_set = _mu_set = _sigma_set = _Mu_set = false;
    _epsilon_set = _omega_set = _beta_set = _v_set = _young_set = _poisson_set = false;
    set_u = set_bc = set_bf = set_sf = set_in = set_coef = false;
+   every = 1;
+   file = "";
 }
 
 
@@ -83,9 +85,9 @@ int equa::setSpD(string spd)
 }
 
 
-void equa::setFields()
+void equa::setVectors()
 {
-   nb_fields = 1;
+   nb_vectors = 1;
    fd[0].fn = "u";
    fd[0].nb_dof = 1;
    fd[0].ds = data::DataSize::NODES;
@@ -120,19 +122,19 @@ void equa::setFields()
          break;
 
       case INCOMPRESSIBLE_NAVIER_STOKES:
-         nb_fields = 2;
+         nb_vectors = 2;
          fd[0].fn = "v", fd[1].fn = "p";
          fd[0].nb_dof = _dim, fd[1].nb_dof = 1;
          break;
          
       case COMPRESSIBLE_EULER:
-         nb_fields = 4;
+         nb_vectors = 4;
          fd[0].fn = "u", fd[1].fn = "rho", fd[2].fn = "p", fd[3].fn = "e";
          fd[0].nb_dof = _dim, fd[1].nb_dof = fd[2].nb_dof = fd[3].nb_dof = 1;
          break;
          
       case COMPRESSIBLE_NAVIER_STOKES:
-         nb_fields = 4;
+         nb_vectors = 4;
          fd[0].fn = "u", fd[1].fn = "rho", fd[2].fn = "p", fd[3].fn = "e";
          fd[0].nb_dof = _dim, fd[1].nb_dof = fd[2].nb_dof = fd[3].nb_dof = 1;
          break;
@@ -565,7 +567,7 @@ void equa::setNodeBC(int code, string exp, double t, Vect<double>& v)
 int equa::setEq()
 {
    int ret = 0;
-   setFields();
+   setVectors();
 
    switch (ieq) {
 
@@ -1066,7 +1068,7 @@ int equa::setCoef()
    /*
    else {
       while (1) {
-         if (_cmd->readline("rita>pde>coef> ")<0)
+         if (_cmd->readline(sPrompt+"pde>coef> ")<0)
             continue;
          switch (key=_cmd->getKW(kw)) {
 
@@ -1097,11 +1099,11 @@ int equa::setCoef()
             case  4:
                if (ieq!=HEAT && ieq!=INCOMPRESSIBLE_NAVIER_STOKES && ieq!=COMPRESSIBLE_NAVIER_STOKES) {
                   cout << "Error: This PDE doesn't need density input" << endl;
-                  *_ofl << "In rita>pde>coef>rho>: This PDE doesn't need density input" << endl;
+                  *_ofl << "In "+sPrompt+"pde>coef>rho>: This PDE doesn't need density input" << endl;
                   break;
                }
                if (_cmd->setNbArg(1,"Give regular expression for density as function of x,y,z,t.")) {
-                  *_ofl << "In rita>pde>coef>rho>: Missing regular expression for density" << endl;
+                  *_ofl << "In "+sPrompt"+pde>coef>rho>: Missing regular expression for density" << endl;
                   break;
                }
                ret = _cmd->get(_rho_exp);
@@ -1115,11 +1117,11 @@ int equa::setCoef()
             case  6:
                if (ieq!=HEAT && ieq!=COMPRESSIBLE_NAVIER_STOKES) {
                   cout << "Error: This PDE doesn't need specific heat input" << endl;
-                  *_ofl << "In rita>pde>coef>Cp>: This PDE doesn't need specific heat input" << endl;
+                  *_ofl << "In "+sPrompt+"pde>coef>Cp>: This PDE doesn't need specific heat input" << endl;
                   break;
                }
                if (_cmd->setNbArg(1,"Give regular expression for specific heat as function of x,y,z,t.")) {
-                  *_ofl << "In rita>pde>coef>Cp>: Missing regular expression for specific heat" << endl;
+                  *_ofl << "In "+sPrompt+"pde>coef>Cp>: Missing regular expression for specific heat" << endl;
                   break;
                }
                ret = _cmd->get(_Cp_exp);
@@ -1469,16 +1471,12 @@ void equa::set()
 
 void equa::print(ostream& s) const
 {
-   map<int,string> name = {{LAPLACE,"Laplace equation"}, {HEAT,"Heat equation"}, {WAVE,"Wave equation"}, {TRANSPORT,"Linear transport equation"},
-                           {LINEAR_ELASTICITY,"Linear Elasticity equations"}, {TRUSS,"2-D Elastic truss equations"}, {BEAM,"3-D Elastic beam equations"},
-                           {INCOMPRESSIBLE_NAVIER_STOKES,"Incompressible Navier-Stokes equations"}, {COMPRESSIBLE_EULER,"Compressible Euler equations"},
-                           {INCOMPRESSIBLE_POROUS_1PHASE,"Incompressible One-phase Porous media equation"}};
+   map<int,string> nm = {{LAPLACE,"Laplace equation"}, {HEAT,"Heat equation"}, {WAVE,"Wave equation"}, {TRANSPORT,"Linear transport equation"},
+                         {LINEAR_ELASTICITY,"Linear Elasticity equations"}, {TRUSS,"2-D Elastic truss equations"}, {BEAM,"3-D Elastic beam equations"},
+                         {INCOMPRESSIBLE_NAVIER_STOKES,"Incompressible Navier-Stokes equations"}, {COMPRESSIBLE_EULER,"Compressible Euler equations"},
+                         {INCOMPRESSIBLE_POROUS_1PHASE,"Incompressible One-phase Porous media equation"}};
    map<int,string> sd = {{FD,"Finite Differences"}, {FE_P1,"P1 Finite Elements"}, {FE_P2,"P2 Finite Elements"},{FE_Q1,"Q1 Finite Elements"},
                          {FV,"Finite Volumes"}, {DG,"Discontinuous Galerkin"}};
-   map<OFELI::Iteration,string> lls = {{OFELI::DIRECT_SOLVER,"Direct solver"}, {OFELI::CG_SOLVER,"Conjugate Gradient"},
-                                       {OFELI::CGS_SOLVER,"Conjugate Gradient Squared"}, {OFELI::BICG_SOLVER,"Bi-Conjugate Gradient"},
-                                       {OFELI::BICG_STAB_SOLVER,"BiConjugate Gradient Stabilized"},
-                                       {OFELI::GMRES_SOLVER,"Generalized Minimal Residual"}};
    if (log.fail()) {
       cout << "PDE improperly or not defined !" << endl;
       return;
@@ -1487,13 +1485,18 @@ void equa::print(ostream& s) const
 //      cout << "Nothing to output: PDE unsolved !" << endl;
 //      return;
 //   }
-   s << "PDE solver" << endl;
-   s << "PDE: " << name[ieq] << endl;
+   s << "PDE Name: " << name << endl;
+   s << "PDE id.: " << eq << endl;
+   s << "PDE: " << nm[ieq] << endl;
+   s << "PDE unknown vector(s): ";
+   for (int i=0; i<nb_vectors-1; ++i)
+      s << fd[i].fn << ", ";
+   s << fd[nb_vectors-1].fn << endl;
+   s << "PDE linear solver: " << lsolv << endl;
+   if (lsolv!="direct")
+      s << "PDE linear preconditioner: " << lprec << endl;
    s << "Space dimension: " << _dim << endl;
    s << "Space discretization: " << sd[Sdm] << endl;
-   s << "Linear system solver: " << lls[ls] << endl;
-   if (verbose==0)
-      return;
 }
 
 

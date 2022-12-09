@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -50,7 +50,7 @@ namespace RITA {
 class cmd;
 class rita;
 
-#define MAX_NB_FIELDS 6
+#define MAX_NB_VECTORS 6
 
 class equa
 {
@@ -58,9 +58,9 @@ class equa
  public:
 
     struct Log {
-      bool pde, field, spd, ls, nl, mesh;
-      Log() { pde = field = spd = ls = nl = mesh = false; }
-      bool fail() const { return (pde || field || spd || ls || nl || mesh); }
+      bool pde, vect, spd, ls, nl, mesh;
+      Log() { pde = vect = spd = ls = nl = mesh = false; }
+      bool fail() const { return (pde || vect || spd || ls || nl || mesh); }
     };
 
     struct PdeData {
@@ -70,8 +70,8 @@ class equa
        PdeData() { exp=""; in_file=""; out_file=""; size=0; };
     };
 
-    struct FieldData {
-       int            field, nb_dof;
+    struct VectorData {
+       int            vect, nb_dof;
        string         fn;
        data::DataSize ds; 
     };
@@ -106,17 +106,17 @@ class equa
        DG
     };
 
-    int nb_fields, pde, ieq, verbose;
+    int nb_vectors, pde, ieq, verbose, every;
     sdm Sdm;
-    string eq, nls;
+    string name, eq, nls, file, lsolv, lprec;
     bool axi;
     PdeData in_data, bc_data, bf_data, sf_data;
     Iteration ls;
     Preconditioner prec;
     vector<string> analytic;
-    FieldData fd[MAX_NB_FIELDS];
+    VectorData fd[MAX_NB_VECTORS];
     Equa *theEquation;
-    void setFields();
+    void setVectors();
     void set(string e);
     int setSpD(string spd);
     int set(Grid* gr);
@@ -146,7 +146,7 @@ class equa
  private:
 
     rita *_rita;
-    int _verb, _dim, _ret, _nb_dof, _nb_fields;
+    int _verb, _dim, _ret, _nb_dof, _nb_vectors;
     cmd *_cmd;
     bool _rho_set, _Cp_set, _kappa_set, _mu_set, _sigma_set, _Mu_set, _epsilon_set, _omega_set;
     bool _beta_set, _v_set, _young_set, _poisson_set;

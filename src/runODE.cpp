@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -28,6 +28,7 @@
 
 #include "rita.h"
 #include "data.h"
+#include "calc.h"
 #include "cmd.h"
 #include "configure.h"
 
@@ -39,8 +40,9 @@ namespace RITA {
 int rita::runODE()
 {
    _analysis_type = TRANSIENT;
-   bool field_ok=false;
-   int size=1, ret=0, count_fct=0, count_field=0, count_def=0, count_init=0, ind=-1;
+   bool vector_ok=false;
+   string ode_name="", phase="";
+   int size=1, ret=0, count_fct=0, count_vector=0, count_def=0, count_init=0, ind=-1;
    _init_time = 0., _time_step=0.1, _final_time=1.;
 
    vector<string> def, name, var;
@@ -49,8 +51,8 @@ int rita::runODE()
    ode->isSet = false;
    _analysis_type = TRANSIENT;
    string str="", var_name="y", scheme="forward-euler", fn="";
-   static const vector<string> kw {"size","func$tion","def$inition","variable","field","init$ial",
-                                   "final$-time","time-step","scheme","summary","clear"};
+   static const vector<string> kw {"size","func$tion","def$inition","var$iable","vect$or","init$ial",
+                                   "final$-time","time-step","scheme","phase","summary","clear"};
    _cmd->set(kw,_gkw);
    for (int k=0; k<_nb_args; ++k) {
 
@@ -62,7 +64,7 @@ int rita::runODE()
 
          case 1:
             name.push_back(_cmd->string_token());
-            count_fct++, field_ok = true;
+            count_fct++, vector_ok = true;
             break;
 
          case 2:
@@ -74,8 +76,8 @@ int rita::runODE()
          case 3:
          case 4:
             var_name = _cmd->string_token();
-            field_ok = true;
-            count_field++;
+            vector_ok = true;
+            count_vector++;
             break;
 
          case 5:
@@ -95,6 +97,10 @@ int rita::runODE()
             scheme = _cmd->string_token();
             break;
 
+         case 9:
+            phase = _cmd->string_token();
+            break;
+
          default:
             msg("ode>","Unknown argument: "+_cmd->Arg());
             return 1;
@@ -106,11 +112,11 @@ int rita::runODE()
          msg("ode>","Illegal size value.");
          return 1;
       }
-      if (count_fct && count_field) {
+      if (count_fct && count_vector) {
          msg("ode>","Function already defined in data module.");
          return 1;
       }
-      if (count_field>1) {
+      if (count_vector>1) {
          msg("ode>","Only one variable must be defined for an ode system.");
          return 1;
       }
@@ -122,12 +128,12 @@ int rita::runODE()
          msg("ode>","Number of function names is larger than system size.");
          return 1;
       }
-      if (_data->nb_ode>0 && count_field==0) {
+      if (_data->nb_ode>0 && count_vector==0) {
          msg("ode>","No variable defined as unknown for new ode system.");
          return 1;
       }
-      if (!field_ok) {
-         msg("ode>","Missing a variable name.");
+      if (!vector_ok) {
+         msg("ode>","Missing a variable (or vector) name.");
          return 1;
       }
       if (count_init>size) {
@@ -190,12 +196,15 @@ int rita::runODE()
       ode->size = size;
       ode->isSet = true;
       ode->log = false;
-      _data->addField(var_name,size);
-      _data->FieldEquation[_data->iField] = _data->iEq;
-      ode->field = _data->iField;
+      _data->addVector(var_name,0.,size);
+      _data->VectorEquation[_data->iVector] = _data->iEq;
+      ode->vect = _data->iVector;
       ode->fn = var_name;
+      ode->phase = phase;
+      if (phase!="")
+         _data->addVector(phase,0,size);
       ode->log = false;
-      _data->FieldType.push_back(data::eqType::ODE);
+      _data->VectorType.push_back(data::eqType::ODE);
       for (const auto& v: init) {
          *ofh << " init=" << v;
          ode->y.push_back(v);
@@ -203,16 +212,22 @@ int rita::runODE()
       ode->scheme = _sch[scheme];
       *ofh << " scheme=" << scheme;
       *ofh << " time-step=" << _time_step << " final-time=" << _final_time << endl;
-      _data->addODE(ode);
+      ode->type = DataType::ODE;
+      _data->addODE(ode,ode_name);
    }
 
    else {
-      int key = 0;
       *ofh << "ode" << endl;
-      while (1) {
-         if (_cmd->readline("rita>ode> ")<0)
+      for (;;) {
+         if (_cmd->readline(sPrompt+"ode> ")<0)
             continue;
-         switch (key=_cmd->getKW(kw,_gkw)) {
+         _nb_args = _cmd->getNbArgs();
+         int key = _cmd->getKW(kw,_gkw,_data_kw);
+         if (key>=200) {
+            _data->setDataExt(key);
+            continue;
+         }
+         switch (key) {
 
             case   0:
                if (_cmd->setNbArg(1,"Size of differential system to be given.")) {
@@ -247,7 +262,7 @@ int rita::runODE()
                ret = _cmd->get(name[count_fct]); 
                if (!ret) {
                   *ofh << "    function " << name[count_fct++] << endl;
-                  field_ok = true;
+                  vector_ok = true;
                   ode->theFct[count_fct].name = name[count_fct-1];
                   ode->theFct[count_fct].set(_data->theFct[ind]->expr,_data->theFct[ind]->var);
                   count_fct++;
@@ -280,16 +295,17 @@ int rita::runODE()
                   msg("ode>variable>","pde must be set first.");
                   break;
                }
-               if (_cmd->setNbArg(1,"Give name of associated variable (field).")) {
-                  msg("ode>variable>:","Missing name of associated variable (field).","",1);
+               if (_cmd->setNbArg(1,"Give name of associated variable (vector).")) {
+                  msg("ode>variable>:","Missing name of associated variable (vector).","",1);
                   break;
                }
                if (!_cmd->get(var_name)) {
-                  field_ok = true, count_field++;
+                  vector_ok = true, count_vector++;
+                  ode->fn = var_name;
                   *ofh << "  variable " << var_name << endl;
                }
                else
-                  msg("ode>variable>","Unknown variable (field) "+var_name);
+                  msg("ode>variable>","Unknown variable (vector) "+var_name);
                break;
 
             case   5:
@@ -344,6 +360,16 @@ int rita::runODE()
                break;
 
             case   9:
+               if (_cmd->setNbArg(1,"Name of vector to contain phase.")) {
+                  msg("ode>phase>","Missing phase variable name.","",1);
+                  break;
+               }
+               if (!_cmd->get(phase))
+                  *ofh << "    phase " << phase << endl;
+               _ret = 0;
+               break;
+
+            case  10:
                cout << "Summary of ODE attributes:\n";
                *ofh << "    summary" << endl;
                if (size>1)
@@ -371,7 +397,7 @@ int rita::runODE()
                _ret = 0;
                break;
 
-            case  10:
+            case  11:
                ode->log = false;
                cout << "ODE equation removed from model." << endl;
                *ofh << "    clear" << endl;
@@ -385,11 +411,12 @@ int rita::runODE()
                cout << "size:       Size of differential system: (Number of equations)\n";
                cout << "function:   Give already defined function defining ode\n";
                cout << "definition: Give expression defining ode\n";
-               cout << "variable:   Variable (or field) name as unknown of the equation\n";
+               cout << "variable:   Variable (or vector) name as unknown of the equation\n";
                cout << "initial:    Give an initial condition\n";
                cout << "final-time: Give final time\n";
                cout << "time-step:  Give time step\n";
                cout << "scheme:     Time integration scheme\n";
+               cout << "phase:      Give name of a vector that will contain phase\n";
                cout << "summary:    Summary of ODE attributes\n";
                cout << "clear:      Remove ODE from model\n" << endl;
                break;
@@ -404,24 +431,6 @@ int rita::runODE()
 
             case 104:
             case 105:
-               setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                if (count_fct==0 && count_def==0) {
                   NO_ODE
                   *ofh << "  end" << endl;
@@ -432,16 +441,16 @@ int rita::runODE()
                   *ofh << "  end" << endl;
                   break;
                }
-               if (!field_ok) {
+               if (!vector_ok) {
                   msg("ode>end>","No variable defined for ode system.");
                   *ofh << "  end" << endl;
                   break;
                }
-               if (count_fct && count_field) {
+               if (count_fct && count_vector) {
                   msg("ode>end>","Function already defined in data module.");
                   return 1;
                }
-               if (count_field>1) {
+               if (count_vector>1) {
                   msg("ode>end>","Only one variable must be defined for an ode system.");
                   return 1;
                }
@@ -465,6 +474,10 @@ int rita::runODE()
                ode->isFct = count_fct;
                ode->y.resize(size);
                ode->scheme = _sch[scheme];
+               if (phase!="") {
+                  ode->phase = phase;
+                  _data->addVector(phase,0,size);
+               }
                for (int j=0; j<size; ++j) {
                   ode->y[j] = init[j];
                   if (!count_fct) {
@@ -474,16 +487,16 @@ int rita::runODE()
                      }
                   }
                }
-               _data->addField(var_name,size);
-               ode->field = _data->iField;
-               _data->FieldType.push_back(data::eqType::ODE);
+               _data->addVector(var_name,0.,size);
+               ode->vect = _data->iVector;
+               _data->VectorType.push_back(data::eqType::ODE);
                ode->isSet = true;
                ode->log = false;
-               _data->FieldEquation[_data->iField] = _data->iEq;
+               _data->VectorEquation[_data->iVector] = _data->iEq;
                ode->isFct = false;
                if (count_fct)
                   ode->isFct = true;
-               _data->addODE(ode);
+               _data->addODE(ode,ode_name);
                _ret = 0;
                return _ret;
 
@@ -493,9 +506,7 @@ int rita::runODE()
                break;
 
             default:
-               msg("ode>","Unknown Command "+_cmd->token(),
-                   "Available commands: size, function, definition, variable, initial, final-time, time-step,\n"
-                   "                    scheme, summary, clear");
+               _ret = _calc->run();
                break;
          }
       }

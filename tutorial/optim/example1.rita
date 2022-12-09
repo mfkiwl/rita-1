@@ -4,8 +4,8 @@
 # whose solution is given by x = 0.5
 # We use for this the Gradient method
 #
-optim field=x obj=x^2-x+1 init=1.
+optim vector=x obj=x^2-x+1 init=1.
 solve
   run
-  display
+= x
 exit

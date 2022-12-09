@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -75,7 +75,7 @@ int cmd::readline(string p)
    _comment = _command = false;
    if (_is!=nullptr) {
       getline(*_is,_buffer);
-     _script_line_nb++;
+      _script_line_nb++;
       if (_is->eof()) {
          _is = nullptr;
          return -5;
@@ -214,6 +214,17 @@ int cmd::getKW(const vector<string> &kw1, const vector<string> &kw2)
 }
 
 
+int cmd::getKW(const vector<string> &kw1, const vector<string> &kw2, const vector<string> &kw3)
+{
+   _kw = &kw1;
+   _gkw = &kw2;
+   _dkw = &kw3;
+   if (++_ind>_word.size())
+      return -1;
+   return find_kw(_word[_ind-1]);
+}
+
+
 int cmd::getKW(const vector<string> &kw)
 {
    _kw = &kw;
@@ -238,6 +249,17 @@ void cmd::set(const vector<string>& arg1, const vector<string>& arg2)
 }
 
 
+void cmd::set(const vector<string>& arg1,
+              const vector<string>& arg2,
+              const vector<string>& arg3)
+{
+   _kw = &arg1;
+   _gkw = &arg2;
+   _dkw = &arg3;
+   _with_kw = true;
+}
+
+
 int cmd::find_kw(const string &s)
 {
    for (auto it=_kw->begin(); it!=_kw->end(); it++) {
@@ -245,10 +267,19 @@ int cmd::find_kw(const string &s)
       if (it->substr(0,n)==s.substr(0,n))
          return distance(_kw->begin(),it);
    }
+   if (_gkw==nullptr)
+      return -1;
    for (auto it=_gkw->begin(); it!=_gkw->end(); it++) {
       int n = int(it->find(SHORT_HAND));
       if (it->substr(0,n)==s.substr(0,n))
          return distance(_gkw->begin(),it)+100;
+   }
+   if (_dkw==nullptr)
+      return -1;
+   for (auto it=_dkw->begin(); it!=_dkw->end(); it++) {
+      int n = int(it->find(SHORT_HAND));
+      if (it->substr(0,n)==s.substr(0,n))
+         return distance(_dkw->begin(),it)+200;
    }
    return -1;
 }

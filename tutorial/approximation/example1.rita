@@ -6,5 +6,4 @@ approximation file=ex1.dat lagrange=2
 
 # We list data to show the created function
 data
-  summary
 exit

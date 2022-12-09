@@ -4,9 +4,7 @@
 # Here the function is defined in the 'data' section
 # Note that since the trapezoidal rule is the default method it doesn't need to be mentioned
 #
-param N=40
-data
-  function name=g field=y def=exp(y)
-  end
+N=40
+function name=g variable=y def=exp(y)
 integration function=g interval=0,2 ne=N
 exit

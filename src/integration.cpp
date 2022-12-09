@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -50,7 +50,7 @@ int integration::run()
    int ret = 0;
    _rita->_analysis_type = INTEGRATION;
    string fct="", def="", var_name="", form="trapezoidal";
-   int count_fct=0, count_def=0, count_field=0;
+   int count_fct=0, count_def=0, count_vector=0;
    int nb=0, ind=0;
    nx = ny = nz = 10;
    xmin = ymin = zmin = 0.;
@@ -71,7 +71,7 @@ int integration::run()
                            "   right-rectangle, mid-point, trapezoidal, simpson, gauss-legendre, gauss-lobatto.\n"
 	                        "   For the Gauss formulae, the number of points can be specified by typing \n"
  	                        "   gauss-legendre,2 for instance.";
-   static const vector<string> kw {"func$tion","def$inition","field","interval","domain",
+   static const vector<string> kw {"func$tion","def$inition","var$iable","vect$or","interval","domain",
                                    "ne","form$ula"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
@@ -105,17 +105,18 @@ int integration::run()
             break;
 
          case   2:
+         case   3:
             var_name = _cmd->string_token(0);
-            count_field++;
+            count_vector++;
             break;
 
-         case   3:
          case   4:
+         case   5:
             ret  = theData->getPar(0,"integration>",xmin);
             ret += theData->getPar(1,"integration>",xmax);
             break;
 
-         case   5:
+         case   6:
             if (nb==1) {
                ret  = theData->getPar(0,"integration>",nx);
                ny = nz = nx;
@@ -127,7 +128,7 @@ int integration::run()
             }
             break;
 
-         case   6:
+         case   7:
             form = _cmd->string_token(0);
             if (nb>1)
                ng = _cmd->int_token(1);
@@ -140,7 +141,7 @@ int integration::run()
    }
 
    if (nb_args>0) {
-      if (count_fct && count_field) {
+      if (count_fct && count_vector) {
          _rita->msg("integration>","Function already defined in data module.");
          return 1;
       }
@@ -152,7 +153,7 @@ int integration::run()
          _rita->msg("integration>","Too many functions defined.");
          return 1;
       }
-      if (count_def && !count_field) {
+      if (count_def && !count_vector) {
          _rita->msg("integration>","Missing a variable name.");
          return 1;
       }
@@ -160,7 +161,7 @@ int integration::run()
       if (dim==1)
          *_rita->ofh << " interval=" << xmin << "," << xmax << " ne=" << nx;
       if (count_fct) {
-         ind = theData->checkFct(fct);
+         ind = theData->checkName(fct,DataType::FCT);
          if (ind==-1) {
             _rita->msg("integration>","Non defined function "+fct);
             return 1;
@@ -169,7 +170,7 @@ int integration::run()
          *_rita->ofh << " function=" << fct;
       }
       else {
-         theData->addField(var_name,dim);
+         theData->addVector(var_name,0.,dim);
          *_rita->ofh << " var=" << var_name << " definition=" << def;
          if (dim==1)
             var.push_back(var_name);
@@ -178,10 +179,10 @@ int integration::run()
                var.push_back(var_name+to_string(i+1));
          }
          theData->addFunction(def,var);
-         if (theData->iField<theData->nb_fields-1)
-            theData->FieldType[theData->iField] = data::eqType::INTEGR;
+         if (theData->iVector<theData->nb_vectors-1)
+            theData->VectorType[theData->iVector] = data::eqType::INTEGR;
          else
-            theData->FieldType.push_back(data::eqType::INTEGR);
+            theData->VectorType.push_back(data::eqType::INTEGR);
          IFct = theData->theFct[theData->iFct];
       }
       nim = Nint[form];

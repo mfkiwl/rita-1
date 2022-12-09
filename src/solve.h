@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -70,7 +70,7 @@ class solve
     rita *_rita;
     bool _set_analytic, _solved, _phase;
     int _verb, _key, _ret, _save_results;
-    int _nb_fields, _nb_eq;
+    int _nb_vectors, _nb_eq;
     vector<string> _analytic_exp, _var;
     vector<int> _fformat, _isave;
     vector<string> _save_file, _phase_file;
@@ -92,8 +92,6 @@ class solve
     int run_eigen();
     void get_error(int eq, int i);
     void setAnalytic();
-    map<string,int> _ff = {{"gmsh",GMSH},{"gnuplot",GNUPLOT},{"vtk",VTK},{"tecplot",TECPLOT},{"matlab",MATLAB},
-                           {"ofeli",OFELI_FF}};
 };
 
 } /* namespace RITA */

@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -59,7 +59,7 @@ int optim::run()
    size = 1;
    int ret=0, nb_le=0, nb_ge=0, nb_eq=0;
    int count_fct=0, count_obj=0, count_grad=0, count_hess=0, count_init=0, count_lp=0;
-   int count_lec=0, count_gec=0, count_eqc=0, count_field=0, penal_ok=0, nb=0, ind=0, key=0;
+   int count_lec=0, count_gec=0, count_eqc=0, count_vector=0, penal_ok=0, nb=0, ind=0, key=0;
    double in=0., x=0.;
    vector<string> grad, hess, var, le_cons, eq_cons;
    OFELI::Vect<double> *A_le, *A_ge, *A_eq;
@@ -72,7 +72,7 @@ int optim::run()
 
    static const vector<string> kw {"size","func$tion","obj$ective","lp","grad$ient","hess$ian","low$-bound",
                                    "up$-bound","ge$-constraint","le$-constraint","eq$-constraint",
-                                   "penal$ty","field","init$ial","algo$rithm","summary","clear"};
+                                   "penal$ty","var$iable","vect$or","init$ial","algo$rithm","summary","clear"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    for (int k=0; k<nb_args; ++k) {
@@ -121,11 +121,12 @@ int optim::run()
             break;
 
          case 12:
+         case 13:
             var_name = _cmd->string_token(0);
-            count_field++;
+            count_vector++;
             break;
 
-         case 13:
+         case 14:
             for (int i=0; i<nb; ++i) {
                in = _cmd->double_token(i);
                init.push_back(in);
@@ -133,7 +134,7 @@ int optim::run()
             }
             break;
 
-         case 14:
+         case 15:
             method = _cmd->string_token(0);
             break;
 
@@ -162,7 +163,7 @@ int optim::run()
          return 1;
       }
       if (count_fct) {
-         if (count_field) {
+         if (count_vector) {
             _rita->msg("optimization>","Function already defined in data module.");
             NO_OPT
             return 1;
@@ -178,7 +179,7 @@ int optim::run()
          NO_OPT
          return 1;
       }
-      if (count_obj && !count_field) {
+      if (count_obj && !count_vector) {
          _rita->msg("optimization>","Missing a variable name.");
          NO_OPT
          return 1;
@@ -190,7 +191,7 @@ int optim::run()
       }
       *_rita->ofh << "optimization";
       if (count_fct>0) {
-         ind = _data->checkFct(name);
+         ind = _data->checkName(name,DataType::FCT);
          if (ind==-1) {
             _rita->msg("optimization>","Non defined function "+name);
             NO_OPT
@@ -205,7 +206,7 @@ int optim::run()
          *_rita->ofh << " function=" << name;
       }
       else {
-         _data->addField(var_name,size);
+         _data->addVector(var_name,0.,size);
          if (size==1)
             var.push_back(var_name);
          else {
@@ -214,10 +215,10 @@ int optim::run()
          }
          *_rita->ofh << " var=" << var_name;
          _data->addFunction(J,var);
-         if (_data->iField<_data->nb_fields-1)
-            _data->FieldType[_data->iField] = data::eqType::OPT;
+         if (_data->iVector<_data->nb_vectors-1)
+            _data->VectorType[_data->iVector] = data::eqType::OPT;
          else
-            _data->FieldType.push_back(data::eqType::OPT);
+            _data->VectorType.push_back(data::eqType::OPT);
          J_Fct = _data->theFct[_data->nb_fcts];
          if (count_grad) {
             if (count_grad!=size) {
@@ -273,7 +274,7 @@ int optim::run()
          for (int i=0; i<size; ++i)
             *_rita->ofh << "," << init[i+1];
          for (int i=0; i<size; ++i)
-            _data->u[_data->iField][i] = init[i];
+            _data->theVector[_data->iVector][i] = init[i];
          *_rita->ofh << endl;
       }
       log = false;
@@ -281,10 +282,15 @@ int optim::run()
 
    else {
       while (1) {
-         nb = _cmd->readline("rita>optimization> ");
+         nb = _cmd->readline(sPrompt+"optimization> ");
          if (nb<0)
             continue;
-         switch (key=_cmd->getKW(kw,_rita->_gkw)) {
+         key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+         if (key>=200) {
+            _data->setDataExt(key);
+            continue;
+         }
+         switch (key) {
 
             case   0:
                if (size<=0) {
@@ -510,16 +516,17 @@ int optim::run()
                break;
  
             case  12:
-               if (_cmd->setNbArg(1,"Give name of associated field.")) {
-                  _rita->msg("optimization>field>","Missing name of associated field.","",1);
+            case  13:
+               if (_cmd->setNbArg(1,"Give name of associated vector.")) {
+                  _rita->msg("optimization>vector>","Missing name of associated vector.","",1);
                   break;
                }
                _cmd->get(str);
                var_name = str;
-               count_field++;
+               count_vector++;
                break;
 
-            case  13:
+            case  14:
                if (lp) {
                   _rita->msg("optimization>initial>","Argument not necessary for linear programming.");
                   _ret = 1;
@@ -537,7 +544,7 @@ int optim::run()
                   init.push_back(x), count_init++;
                break;
 
-            case  14:
+            case  15:
                if (log) {
                   cout << "Please define algebraic equation first." << endl;
                   _rita->msg("optimization>algorithm>","equation must be set first.","",1);
@@ -553,12 +560,12 @@ int optim::run()
                _rita->_ret = 0;
                break;
 
-            case  15:
+            case  16:
                cout << "Summary of optimization problem attributes:\n";
                _rita->_ret = 0;
                break;
 
-            case  16:
+            case  17:
                size = 0;
                G_ok = H_ok = 0;
                *_rita->ofh << " clear" << endl;
@@ -581,7 +588,7 @@ int optim::run()
                cout << "le-constraint: Define a (<=) inequality constraint\n";
                cout << "eq-constraint: Define an equality constraint\n";
                cout << "penalty:       Penalty parameter (small) to enforce constraints\n";
-               cout << "variable:      Variable (or field) name as unknown of the optimization problem\n";
+               cout << "variable:      Variable name as unknown of the optimization problem\n";
                cout << "init:          Initial guess for iterations\n";
                cout << "algorithm:     Set optimization algorithm\n";
                cout << "summary:       Summary of optimization problem attributes\n";
@@ -598,24 +605,6 @@ int optim::run()
 
             case 104:
             case 105:
-               _rita->setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  _rita->msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                _cmd->setNbArg(0);
                if (lp) {
                   if (!count_lp && lp) {
@@ -626,16 +615,16 @@ int optim::run()
                      }
                      break;
                   }
-                  if (!count_field) {
+                  if (!count_vector) {
                      _rita->msg("optimization>end>","Missing a variable name.");
                      break;
                   }
                   *_rita->ofh << "optimization\n size " << size << endl << "  lp" << endl;
-                  _data->addField(var_name,size);
-                  if (_data->iField<_data->nb_fields-1)
-                     _data->FieldType[_data->iField] = data::eqType::OPT;
+                  _data->addVector(var_name,0.,size);
+                  if (_data->iVector<_data->nb_vectors-1)
+                     _data->VectorType[_data->iVector] = data::eqType::OPT;
                   else
-                     _data->FieldType.push_back(data::eqType::OPT);
+                     _data->VectorType.push_back(data::eqType::OPT);
                   if (size==1)
                      var.push_back(var_name);
                   else {
@@ -676,7 +665,7 @@ int optim::run()
                      }
                      break;
                   }
-                  if (count_fct && count_field) {
+                  if (count_fct && count_vector) {
                      _rita->msg("optimization>end>","Function already defined in data module.");
                      NO_OPT
                      return 1;
@@ -691,13 +680,13 @@ int optim::run()
                      NO_OPT
                      return 1;
                   }
-                  if (count_obj && !count_field) {
+                  if (count_obj && !count_vector) {
                      _rita->msg("optimization>end>","Missing a variable name.");
                      break;
                   }
                   *_rita->ofh << "optimization\n  size " << size << endl;
                   if (count_fct>0) {
-                     ind = _data->checkFct(name);
+                     ind = _data->checkName(name,DataType::FCT);
                      if (ind==-1) {
                         _rita->msg("optimization>end>","Non defined function "+name);
                         _ret = 1;
@@ -712,7 +701,7 @@ int optim::run()
                      *_rita->ofh << "  function " << name << endl;
                   }
                   else {
-                     _data->addField(var_name,size);
+                     _data->addVector(var_name,0.,size);
                      if (size==1)
                         var.push_back(var_name);
                      else {
@@ -722,10 +711,10 @@ int optim::run()
                      *_rita->ofh << "  variable " << var_name << endl;
                      *_rita->ofh << "  objective " << J << endl;
                      _data->addFunction(J,var);
-                     if (_data->iField<_data->nb_fields-1)
-                        _data->FieldType[_data->iField] = data::eqType::OPT;
+                     if (_data->iVector<_data->nb_vectors-1)
+                        _data->VectorType[_data->iVector] = data::eqType::OPT;
                      else
-                        _data->FieldType.push_back(data::eqType::OPT);
+                        _data->VectorType.push_back(data::eqType::OPT);
                      J_Fct = _data->theFct[_data->nb_fcts];
                   }
                   if (count_grad) {
@@ -795,7 +784,7 @@ int optim::run()
                      init.push_back(0.);
                   *_rita->ofh << "  init  ";
                   for (int i=0; i<size; ++i) {
-                     (*_data->u[_data->iField])[i] = init[i];
+                     (*_data->theVector[_data->iVector])[i] = init[i];
                      *_rita->ofh << init[i] << "  ";
                   }
                }

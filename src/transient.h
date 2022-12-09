@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -59,7 +59,7 @@ class transient
     rita *_rita;
     data *_data;
     double _init_time, _final_time, _time_step;
-    int _nb_fields, _nb_ae, _nb_ode, _nb_pde, _rs;
+    int _nb_vectors, _nb_ae, _nb_ode, _nb_pde, _rs;
     vector<int> *_fformat, *_isave;
     vector<string> *_save_file, *_phase_file;
     odae *_ae_eq, *_ode_eq;

@@ -10,7 +10,7 @@ mesh
 # Define model: PDE and discretization method
 stationary
 pde linear-elasticity
-  field u
+  vector u
   bc code=1 value=0.
   sf code=1 value=-1000.
   space feQ1
@@ -18,7 +18,8 @@ pde linear-elasticity
 #
 # Solve problem and save solution in file
 solve
-  save file=example4.pos
   run
-  display 
+#
+# Save result in gmsh file
+save name=u file=example4.pos format=gmsh
 exit

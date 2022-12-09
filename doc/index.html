@@ -135,11 +135,9 @@
                               <div class="col-md-12">
                                  <div class="start-desc">
                                     <h1 class="first-rita-heading"> </h1>
-                                    <p><span class=logo>rita</span> is a console application to solve scientific computing
-                                       problems invoking partial differential equations. The numerical solution is
+                                    <p><span class=logo>rita</span> is a console application to solve main numerical analysis
+                                        problems and in particular scientific computing problems governed by partial differential equations. The numerical solution is
                                        based on the <span class=logo><a href="http://ofeli.org">OFELI</a></span> library.
-                                       <span class=logo>rita</span> handles also the numerical solution of algebraic
-                                       equations, ordinary differential equations and most basic numerical analysis problems.</p>
 
 		  		                    <p><span class=logo>rita</span> can be either run interactively by typing
                   		 		       a series of commands or by using a shell script file.<br>
@@ -148,8 +146,8 @@
                                        or once in the <span class=logo>rita</span> execution by typing<br>
                                        &emsp;&emsp;&emsp;<span class=var>load script-file</span><br>
                                        The file <span class=var>script-file</span> must contain all commands to be executed,
-                                       one on each line.</p>
-                                       <p>The tutorial directory contains a series of examples of script files.
+                                       one on each line.<br>
+                                       The tutorial directory contains a series of examples of script files.
                                  </div>
                               </div>
                            </div>
@@ -230,8 +228,8 @@
                                                        <a name="data"></a>Command <span class=vvar>data</span>
                                                        enables defining several types of data and entities that can be used in solvers.
                                                        Once this command is entered (without arguments) a submenu is available.
-                                                       These types are: parameters, fields, functions, tabulations, grids, meshes. For these ones the following commands are available: 
-                                                       <span class=var>parameter</span>, <span class=var>field</span>, <span class=var>function</span>, <span class=var>tabulation</span>, 
+                                                       These types are: parameters, vectors, functions, tabulations, grids, meshes. For these ones the following commands are available: 
+                                                       <span class=var>parameter</span>, <span class=var>vector</span>, <span class=var>function</span>, <span class=var>tabulation</span>, 
                                                        <span class=var>grid</span>, <span class=var>mesh</span>.<br>
                                                        <ul>
                                                           <li>Keyword <span class=var>parameter</span> (or simply <span class=var>param</span> 
@@ -242,20 +240,20 @@
                                                             <span class=var>...</span> These constants can be used as data in most commands.
                                                             The optional symbol <span class=var>;</span> prevents from outputting the result.
                                                             </li>
-                                                          <li>Keyword <span class=var>field</span>:<br>
-                                                              <span class=var>field&ensp;[name=nm]&ensp;[size=n]&ensp;[mesh=m]&ensp;[grid=g]&ensp;
+                                                          <li>Keyword <span class=var>vector</span>:<br>
+                                                              <span class=var>vector&ensp;[name=nm]&ensp;[size=n]&ensp;[mesh=m]&ensp;[grid=g]&ensp;
                                                               [nbdof=d]&ensp;[type=t]</span><br>
                                                               All arguments are optional but at least of of them is needed.
                                                               <ul>
-                                                                 <li><span class=var>nm</span>: Name of field.
-                                                                 <li><span class=var>n</span>: Size of field. If this one is not defined through a mesh of a grid
-                                                                 <li><span class=var>m</span>: Name of mesh associated to field. In this case, field size is determined by mesh.
-                                                                 <li><span class=var>g</span>: Name of grid associated to field. In this case, field size is determined by grid.
+                                                                 <li><span class=var>nm</span>: Name of vector.
+                                                                 <li><span class=var>n</span>: Size of vector. If this one is not defined through a mesh of a grid
+                                                                 <li><span class=var>m</span>: Name of mesh associated to vector. In this case, vector size is determined by mesh.
+                                                                 <li><span class=var>g</span>: Name of grid associated to vector. In this case, vector size is determined by grid.
                                                                  <li><span class=var>d</span>: Number of degrees of freedom for any degree of freedom support. 
-                                                                     <it>e.g.</it>, for a field defined through a mesh associated to nodes, <span class=var>d</span> is the number
-                                                                     of field components at each node.
+                                                                     <it>e.g.</it>, for a vector defined through a mesh associated to nodes, <span class=var>d</span> is the number
+                                                                     of vector components at each node.
                                                                  <li><span class=var>t</span> is a string defined degrees of freedom support. This argument is
-                                                                     useless if the field is not associated to a mesh. Its default value is <span class=var>nodes</span>.
+                                                                     useless if the vector is not associated to a mesh. Its default value is <span class=var>nodes</span>.
                                                                      Other possible values are <span class=var>elements</span>, 
                                                                      <span class=var>sides</span> or <span class=var>edges</span>.
                                                               </ul>
@@ -536,7 +534,7 @@
                                                            <li><span class=var>init&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
                                                                <span class=var>y1, y2, ...</span> are initial guesses of the solution components.
                                                            <li><span class=var>variable&ensp;x</span><br>
-                                                               <span class=var>x</span> is the name of the variable (or field).
+                                                               <span class=var>x</span> is the name of the variable (or vector).
                                                                This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than 
                                                                <span class=var>1</span>, the unknowns are necessarily <span class=var>x1, x2, ...</span>
@@ -617,7 +615,7 @@
                                                            <li><span class=var>initial&ensp;y1&ensp;y2&ensp;y3&ensp;...</span><br>
                                                                <span class=var>y1, y2, ...</span> are initial guesses of the solution components.
                                                            <li><span class=var>variable&ensp;y</span><br>
-                                                               <span class=var>y</span> is the name of the variable (or field) other than the time variable, which is
+                                                               <span class=var>y</span> is the name of the variable (or vector) other than the time variable, which is
                                                                necessarily <span class=var>t</span>.
                                                                This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than 
@@ -668,13 +666,13 @@
                                                        Other equations are available but not sufficiently tested.<br>
 
                                                        Then a submenu is initialized with the available keywords:<br>
-                                                       <span class=var>field, coef, init, bc, bf, sf, space, ls, clear</span>
+                                                       <span class=var>vector, coef, init, bc, bf, sf, space, ls, clear</span>
                                                        <ul>
-                                                           <li><span class=var>field&ensp;u</span><br>
-                                                               <span class=var>u</span> is a string defining a field (vector of unknowns) for the equation. If the field
-                                                               has been defined already, this one will be used. If not, the new field will be added to the list of fields. This 
+                                                           <li><span class=var>vector&ensp;u</span><br>
+                                                               <span class=var>u</span> is a string defining a vector (vector of unknowns) for the equation. If the vector
+                                                               has been defined already, this one will be used. If not, the new vector will be added to the list of vectors. This 
                                                                argument has to be given as many times as the equation requires it (<i>e.g.</i> Incompressible Navier-Stokes equations
-                                                               need 2 fields: velocity and pressure).
+                                                               need 2 vectors: velocity and pressure).
                                                            </li>
                                                            <li><span class=var>coef&ensp;c&ensp;v</span><br>
                                                                To define various coefficients of the pde. These coefficients can be functions of position and time. Here
@@ -755,7 +753,7 @@
                                                                <span class=var>x(i)&geq;lb</span>. It must be used once for each bound constraint.</li>
                                                            <li><span class=var>j, ub</span>: This keyword enables prescribing an upper bound constraint, <i>i.e.</i>, here we can impose
                                                                <span class=var>x(j)&leq;ub</span>. It must be used once for each bound constraint.</li>
-                                                           <li><span class=var>x</span>: name of the variable (or field). This keyword is mandatory if the keyword 
+                                                           <li><span class=var>x</span>: name of the variable (or vector). This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than <span class=var>1</span>, 
                                                                the unknowns are necessarily <span class=var>x1, x2, ...</span></li>
                                                            <li><span class=var>a</span>: String defining the used optimization method. This string is to pick in the following values:
@@ -825,7 +823,7 @@
                                                                <span class=var>p</span> is the value of the penalty parameter. Constraints are enforced by a penalty formulation 
                                                                except for linear programming problems.</li>
                                                            <li><span class=var>variable&ensp;x</span><br>
-                                                               Name of the variable (or field). This keyword is mandatory if the keyword 
+                                                               Name of the variable (or vector). This keyword is mandatory if the keyword 
                                                                <span class=var>definition</span> is used. If the size of the system is greater than <span class=var>1</span>, 
                                                                the unknowns are necessarily <span class=var>x1, x2, ...</span></li>
                                                            <li><span class=var>initial&ensp;x1&ensp;x2&ensp;...</span><br>
@@ -1011,7 +1009,7 @@
                                  <div class="start-desc">
                                     <h2 class="rita-heading">RITA License</h2>
                                     <p><span class=logo>rita</span> is freely available under the GPL (Gnu Public License).<br>
-                                       Copyright &copy; 2021-2022 Rachid Touzani</p>
+                                       Copyright &copy; 2021-2023 Rachid Touzani</p>
                                     <p><span class=TEXT><span class=logo>rita</span> is free software: you can redistribute it and/or modify
                                        it under the terms of the GNU General Public License as published by
                                        the Free Software Foundation, either version 3 of the License, or

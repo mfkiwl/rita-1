@@ -1,29 +1,21 @@
 # Iris Script file to practice eigenproblem solver
-# The matrix is read from an input file
+# The matrix is defined entry by entry
 #
-# First read matrix from file
-data 
-  matrix file=m.dat name=M1
-  end
+  M = matrix(2,2)
+  M[0,0]=2
+  M[0,1]=-1
+  M[1,0]=-1
+  M[1,1]=2
 
-# Define eigenvalue problem, we want also to compute eigenvectors
-eigen matrix=M1 eigv=1
-
-# We check all defined data
-data
-  summary
-  end
+# Define eigenvalue problem, eigenvectors are not computed
+eigen matrix=M
 
 # Solve the defined problem
 solve
   run
   end
 
-# Print eigenvalues and two first eigenvectors (only real parts)
-data
-  print M1-ev-r
-  print M1-ev-1r
-  print M1-ev-2r
-# Save in given file first eigenvector (only real part)
-  save name=M1-ev-1r file=ev.dat
+# Print eigenvalues
+ = M-ev-r
+
 exit

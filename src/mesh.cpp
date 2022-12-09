@@ -6,14 +6,13 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
     rita is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
 
     rita is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -32,6 +31,7 @@
 #include "mesh/saveMesh.h"
 #include "rita.h"
 #include "data.h"
+#include "calc.h"
 
 //#ifdef USE_GMSH
 #include <gmsh.h>
@@ -70,10 +70,14 @@ int mesh::run()
    _theDomain = new OFELI::Domain;
 #endif
    while (1) {
-      int nb_args = _cmd->readline("rita>mesh> ");
+      int nb_args = _cmd->readline(sPrompt+"mesh> ");
       if (nb_args < 0)
          continue;
-      _key = _cmd->getKW(kw,_rita->_gkw);
+      _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+      if (_key>=200) {
+         _data->setDataExt(_key);
+         continue;
+      }
       switch (_key) {
 
          case   0:
@@ -173,33 +177,12 @@ int mesh::run()
 
          case 104:
          case 105:
-            _rita->setParam();
-            break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               _rita->msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case 107:
-            _data->Summary();
-            break;
-
-         case 108:
-         case 109:
             *_rita->ofh << "  end" << endl;
              _ret = 0;
             return _ret;
 
          default:
-            _rita->msg("mesh>","Unknown Command "+_cmd->token(),
-                       "Available commands:\n"
-                       "1d, rectangle, cube, point, curve, surface, volume, contour, code\n"
-                       "generate, list, plot, clear, save, read");
+            _ret = _rita->_calc->run();
             break;
       }
    }
@@ -256,15 +239,13 @@ void mesh::set1D()
 
          case 100:
          case 101:
-            cout << "1d [domain=m,M] [ne=n] [codes=c1,c2] [nbdof=d] [save=file]\n"
+            cout << "1d [domain=m,M] [ne=n] [codes=c1,c2] [nbdof=d]\n"
                     "m, M: Extremal coordinates of interval ends. The default values are 0., 1.\n"
                     "n: Number of elements in the interval. Its default value is 10.\n"
                     "c1, c2: Codes associated to the first and the last node. These integer values\n"
                     "        are necessary to enforce boundary conditions. A code 0 (Default value) means\n"
                     "        no condition to prescribe.\n"
-                    "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n"
-                    "file: Name of the file where the generated mesh will be stored. By default the mesh \n"
-                    "      remains in memory but is not saved in file." << endl << endl;
+                    "d: Number of degrees of freedom associated to any generated node. Default value is 1." << endl << endl;
             _ret = 0;
             return;
 
@@ -335,17 +316,15 @@ void mesh::set1D()
       _theMesh = new OFELI::Mesh(xmin,xmax,ne,cmin,cmax,1,size_t(_nb_dof));
       _theMesh->removeImposedDOF();
       _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-      _saved = true;
+      _saved = false;
       _generator = 1;
       _generated = true;
-      _theMesh->put(_mesh_file);
-      _data->mesh_name.push_back("M"+to_string(_data->theMesh.size()));
+      _data->NameMesh.push_back("M"+to_string(_data->theMesh.size()));
       _data->theMesh.push_back(_theMesh);
-      if (_verb)
-         cout << "1-D mesh complete and saved in file " << _mesh_file << endl;
       *_rita->ofh << "  1d  domain=" << xmin << "," << xmax << "  codes=" << cmin
-                  << "," << cmax << "  ne=" << ne << "  nbdof=" << _nb_dof
-                  << "  save=" << _mesh_file << endl;
+                  << "," << cmax << "  ne=" << ne << "  nbdof=" << _nb_dof << endl;
+      if (_verb)
+         cout << "1-D mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
    }
 
    else {
@@ -357,9 +336,14 @@ void mesh::set1D()
       }
       *_rita->ofh << "  1d" << endl;
       while (1) {
-         if (_cmd->readline("rita>mesh>1d> ")<0)
+         if (_cmd->readline(sPrompt+"mesh>1d> ")<0)
             continue;
-         switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
+         _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+         if (_key>=200) {
+            _data->setDataExt(_key);
+            continue;
+         }
+         switch (_key) {
 
             case   0:
                if (_verb>1)
@@ -429,19 +413,13 @@ void mesh::set1D()
                }
                _theMesh = new OFELI::Mesh(xmin,xmax,ne,cmin,cmax,1,size_t(_nb_dof));
                _theMesh->removeImposedDOF();
-               _saved = true;
+               _saved = false;
                _generator = 1;
                _generated = true;
-               _mesh_file = "rita-1d.m";
                if (_cmd->getNbArgs()>0)
                   ret = _cmd->get(_mesh_file);
-               if (!ret) {
-                  _theMesh->put(_mesh_file);
+               if (!ret)
                   _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-                  *_rita->ofh << "  save " << _mesh_file << endl;
-                  if (_verb)
-                     cout << "1-D mesh saved in file " << _mesh_file << endl;
-               }
                break;
 
             case 100:
@@ -451,8 +429,7 @@ void mesh::set1D()
                cout << "domain   : Enter xmin and xmax\n";
                cout << "ne       : Enter number of elements to generate\n";
                cout << "codes    : Codes to associate to end nodes\n";
-               cout << "nbdof    : Number of dof per node\n";
-               cout << "save     : Save generated 1-D mesh to file and return to higher level\n" << endl;
+               cout << "nbdof    : Number of dof per node" << endl;
                break;
 
             case 102:
@@ -466,24 +443,6 @@ void mesh::set1D()
 
             case 104:
             case 105:
-               _rita->setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  _rita->msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -492,13 +451,10 @@ void mesh::set1D()
                   _theMesh = new OFELI::Mesh(xmin,xmax,ne,cmin,cmax,1,size_t(_nb_dof));
                   _theMesh->removeImposedDOF();
                   _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-                  if (_verb)
-                     cout << "1-D mesh complete and saved in file " << _mesh_file << endl;
-                  _saved = true;
                }
                *_rita->ofh << "  end" << endl;
-               if (_verb && !_saved)
-                  cout << "Mesh '1d' complete." << endl;
+               if (_verb)
+                  cout << "1-D mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
                _ret = 90;
                return;
 
@@ -506,8 +462,7 @@ void mesh::set1D()
                break;
 
             default:
-               _rita->msg("mesh>1d>","Unknown command: "+_cmd->token(),
-                          "Available commands:\ndomain, ne, codes, nbdof, save");
+               _ret = _rita->_calc->run();
                break;
          }
       }
@@ -526,7 +481,7 @@ void mesh::setRectangle()
    _ret = 0;
    _saved = false;
    const static string H = "rectangle [min=mx,my] [max=Mx,My] [ne=nx,ny]  [codes=c1,c2,c3,c4]\n"
-                           "          [nbdof=d] [save=file]\n"
+                           "          [nbdof=d]\n"
                            "mx, my: coordinates of the lower left corner of the rectangle.\n"
                            "        The default values are 0., 0.\n"
                            "Mx, My: Coordinates of the upper right corner of the rectangle.\n"
@@ -537,11 +492,9 @@ void mesh::setRectangle()
                            "                x=Mx, y=My, x=mx respectively. These integer values are necessary\n"
                            "                to enforce boundary conditions. A code 0 (Default value) means no\n"
                            "                condition to prescribe.\n"
-                           "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n"
-                           "file: Name of the file where the generated mesh will be stored. By default the mesh\n"
-                           "      remains in memory but is not saved in file.";
+                           "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n";
    _mesh_file = "rita-rectangle.m";
-   static const vector<string> kw {"min","max","ne","codes","nbdof","save"};
+   static const vector<string> kw {"min","max","ne","codes","nbdof"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    for (int i=0; i<nb_args; ++i) {
@@ -621,10 +574,6 @@ void mesh::setRectangle()
             _nb_dof = _cmd->int_token(0);
             break;
 
-         case   5:
-            _mesh_file = _cmd->string_token(0);
-            break;
-
          case  100:
          case  101:
             cout << H << endl;
@@ -645,18 +594,15 @@ void mesh::setRectangle()
          _rita->msg("mesh>rectangle>","ymax: "+to_string(ymax)+" must be > ymin: "+to_string(ymin));
          return;
       }
-      if (!_saved) {
-         _theMesh = new OFELI::Mesh(xmin,xmax,ymin,ymax,nx,ny,c[3],c[1],c[0],c[2],TRIANGLE,size_t(_nb_dof));
-         _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-         if (_verb)
-            cout << "2-D mesh complete and saved in file " << _mesh_file << endl;
-         _saved = _generated = true;
-      }
-      _generator = 1;
+      _theMesh = new OFELI::Mesh(xmin,xmax,ymin,ymax,nx,ny,c[3],c[1],c[0],c[2],TRIANGLE,size_t(_nb_dof));
+      _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
+      if (_verb)
+         cout << "2-D mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
       _generated = true;
+      _generator = 1;
       *_rita->ofh << "  rectangle min=" << xmin << "," << ymin << " max=" << xmax << "," << ymax;
       *_rita->ofh << "  ne=" << nx << "," << ny << "  codes=" << c[0] << "," << c[1] << "," << c[2];
-      *_rita->ofh << "," << c[3] << "  nbdof=" << _nb_dof << "  save=" << _mesh_file << endl;
+      *_rita->ofh << "," << c[3] << "  nbdof=" << _nb_dof << endl;
       _ret = 0;
       return;
    }
@@ -671,9 +617,14 @@ void mesh::setRectangle()
       *_rita->ofh << "  rectangle" << endl;
 
       while (1) {
-         if (_cmd->readline("rita>mesh>rectangle> ")<0)
+         if (_cmd->readline(sPrompt+"mesh>rectangle> ")<0)
             continue;
-         switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
+         _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+         if (_key>=200) {
+            _data->setDataExt(_key);
+            continue;
+         }
+         switch (_key) {
 
             case   0:
                if (_verb>1)
@@ -777,9 +728,8 @@ void mesh::setRectangle()
                if (!ret) {
                   _theMesh->put(_mesh_file);
                   _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-                  *_rita->ofh << "    save " << _mesh_file << endl;
                   _saved = true;
-                  cout << "2-D mesh complete and saved in file " << _mesh_file << endl;
+                  cout << "2-D mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
                }
                break;
 
@@ -798,39 +748,19 @@ void mesh::setRectangle()
                _verb = _configure->getVerbose();
                break;
 
-            case 104:
-            case 105:
-               _rita->setParam();
-               break;
-
             case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  _rita->msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
             case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                *_rita->ofh << "    end" << endl;
                if (!_saved) {
                   _theMesh = new OFELI::Mesh(xmin,xmax,ymin,ymax,nx,ny,c[3],c[1],c[0],c[2],TRIANGLE,size_t(_nb_dof));
                   _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
-                  if (_verb)
-                     cout << "2-D mesh complete and saved in file " << _mesh_file << endl;
                   _generator = 2;
                   _saved = true;
                }
                if (_verb && !_saved)
-                  cout << "Mesh 'rectangle' complete." << endl;
+                  cout << "Mesh 'rectangle' complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
                _ret = 90;
                return;
 
@@ -838,8 +768,7 @@ void mesh::setRectangle()
                break;
 
             default:
-               _rita->msg("mesh>rectangle>","Unknown Command: "+_cmd->token(),
-                          "Available commands: min, max, ne, codes, nbdof, save");
+               _ret = _rita->_calc->run();
                break;
          }
       }
@@ -856,8 +785,8 @@ void mesh::setCube()
    int nb=0, ret=0, nx=10, ny=10, nz=10, cxmin=0, cxmax=0, cymin=0, cymax=0, czmin=0, czmax=0;
    _nb_dof = 1;
    _dim = 3;
-   const static string H = "cube [min=mx,my,mz] [max=Mx,My,Mz] [ne=nx,ny,nz]  [codes=cxm,cxM,cym,cyM,czm,czMs]\n"
-                           "     [nbdof=d] [save=file]\n"
+   const static string H = "cube [min=mx,my,mz] [max=Mx,My,Mz] [ne=nx,ny,nz] [codes=cxm,cxM,cym,cyM,czm,czMs]\n"
+                           "     [nbdof=d]\n"
                            "mx, my, mz: Minimal coordinates in each direction.\n"
                            "            The default values are 0., 0., 0.\n"
                            "Mx, My, Mz: Maximal coordinates in each direction.\n"
@@ -868,9 +797,7 @@ void mesh::setCube()
                            "x=Mx, y=my, y=My, z=mz, z=Mz respectively.\n"
                            "These integer values are necessary to enforce boundary\n"
                            "conditions. A code 0 (Default value) means no condition to prescribe.\n"
-                           "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n"
-                           "file: Name of the file where the generated mesh will be stored. By default the mesh\n"
-                           "      remains in memory but is not saved in file.";
+                           "d: Number of degrees of freedom associated to any generated node. Default value is 1.\n";
    *_rita->ofh << "  cube" << endl;
    _saved = false;
    _ret = 0;
@@ -880,7 +807,7 @@ void mesh::setCube()
       cout << "Default subdivision: 10*10*10\n";
       cout << "Default nb of dof: 1" << endl;
    }
-   static const vector<string> kw {"min","max","ne","codes","nbdof","save"};
+   static const vector<string> kw {"min","max","ne","codes","nbdof"};
 
    _cmd->set(kw);
    int nb_args = _cmd->getNbArgs();
@@ -1001,23 +928,28 @@ void mesh::setCube()
                                     cymax,czmin,czmax,HEXAHEDRON,size_t(_nb_dof));
          _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
          if (_verb)
-            cout << "3-D mesh complete and saved in file " << _mesh_file << endl;
+            cout << "3-D mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
          _saved = _generated = true;
       }
       _generator = 1;
       _generated = true;
       *_rita->ofh << "  cube min=" << xmin << "," << ymin << "," << zmin << " max=" << xmax << "," << ymax << "," << zmax;
       *_rita->ofh << " ne=" << nx << "," << ny << "," << nz << " codes=" << cxmin << "," << cxmax << "," << cymin << ",";
-      *_rita->ofh << cymax << "," << czmin << "," << czmax << " nbdof=" << _nb_dof << " save=" << _mesh_file << endl;
+      *_rita->ofh << cymax << "," << czmin << "," << czmax << " nbdof=" << _nb_dof << endl;
       _ret = 0;
       return;
    }
 
    else {
       while (1) {
-         if (_cmd->readline("rita>mesh>cube> ")<0)
+         if (_cmd->readline(sPrompt+"mesh>cube> ")<0)
             continue;
-         switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
+         _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+         if (_key>=200) {
+            _data->setDataExt(_key);
+            continue;
+         }
+         switch (_key) {
 
             case   0:
                if (_verb>1)
@@ -1107,13 +1039,11 @@ void mesh::setCube()
                _theMesh = new OFELI::Mesh(xmin,xmax,ymin,ymax,zmin,zmax,nx,ny,nz,cxmin,cxmax,cymin,
                                           cymax,czmin,czmax,HEXAHEDRON,size_t(_nb_dof));
                _theMesh->put(_mesh_file);
-               _data->mesh_name.push_back("M"+to_string(_data->theMesh.size()));
+               _data->NameMesh.push_back("M"+to_string(_data->theMesh.size()));
                _data->theMesh.push_back(_theMesh);
                _generator = 3;
                _generated = true;
-               cout << "Mesh of cube complete and saved in file " << _mesh_file << endl;
-               if (!ret)
-                  *_rita->ofh << "    save " << _mesh_file << endl;
+               cout << "Mesh of cube complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
                _saved = true;
                break;
 
@@ -1134,24 +1064,6 @@ void mesh::setCube()
 
             case 104:
             case 105:
-               _rita->setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  _rita->msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
-            case 108:
-            case 109:
                if (_verb>1)
                   cout << "Getting back to higher level ..." << endl;
                if (!_saved) {
@@ -1162,7 +1074,7 @@ void mesh::setCube()
                }
                *_rita->ofh << "    end" << endl;
                if (_verb && !_saved)
-                  cout << "Mesh 'cube' complete." << endl;
+                  cout << "Mesh 'cube' complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
                _ret = 90;
                return;
 
@@ -1170,8 +1082,7 @@ void mesh::setCube()
                break;
 
             default:
-               _rita->msg("mesh>cube>","Unknown command: "+_cmd->token(),
-                          "Available commands: min, max, ne, codes, nbdof, save, end, <");
+               _ret = _rita->_calc->run();
                break;
          }
       }
@@ -1903,9 +1814,14 @@ void mesh::setSubDomain()
 
    static const vector<string> kw {"line","orient$ation"};
    while (1) {
-      if (_cmd->readline("rita>mesh>subdomain> ")<0)
+      if (_cmd->readline(sPrompt+"mesh>subdomain> ")<0)
          continue;
-      switch (_key=_cmd->getKW(kw)) {
+      _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+      if (_key>=200) {
+         _data->setDataExt(_key);
+         continue;
+      }
+      switch (_key) {
 
          case   0:
             if (_verb>1)
@@ -1975,8 +1891,7 @@ void mesh::setSubDomain()
             cout << "\nAvailable Commands\n";
             cout << "line        : Label for a line in subdomain\n";
             cout << "orientation : Orientation\n";
-            cout << "code        : Code to associate to subdomain\n";
-            cout << "save        : Save subdomain" << endl;
+            cout << "code        : Code to associate to subdomain" << endl;
             break;
 
          case 102:
@@ -1990,20 +1905,6 @@ void mesh::setSubDomain()
 
          case 104:
          case 105:
-             _rita->setParam();
-             break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               _rita->msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case 107:
-         case 108:
             _ret = 100;
             return;
 
@@ -2014,7 +1915,7 @@ void mesh::setSubDomain()
 
          default:
             _rita->msg("mesh>subdomain>","Unknown command "+_cmd->token(),
-                       "Available commands: lines, save");
+                       "Available commands: lines");
             break;
        }
    }
@@ -2181,7 +2082,7 @@ void mesh::Generate()
    *_rita->ofh << "  generate" << endl;
    _data->addMesh(_theMesh,"M-"+to_string(_data->nb_meshes+1));
    if (_verb)
-      cout << "Mesh complete and saved in file " << _mesh_file << endl;
+      cout << "Mesh complete. Mesh Name: M-"+to_string(_data->theMesh.size()-1) << endl;
    _ret = 0;
    return;
 }
@@ -2312,7 +2213,7 @@ void mesh::Read()
          }
          _theMesh = new OFELI::Mesh;
          _theMesh->get(file,GMSH);
-         _data->mesh_name.push_back("M"+to_string(_data->theMesh.size()));
+         _data->NameMesh.push_back("M"+to_string(_data->theMesh.size()));
          _data->theMesh.push_back(_theMesh);
          _generated = true;
          *_rita->ofh << "  geo=" << file;
@@ -2335,10 +2236,15 @@ void mesh::Read()
    else {
       _cmd->setNbArg(0);
       while (1) {
-         if (_cmd->readline("rita>mesh>read> ")<0)
+         if (_cmd->readline(sPrompt+"mesh>read> ")<0)
             continue;
 
-         switch (_key=_cmd->getKW(kw,_rita->_gkw)) {
+         _key = _cmd->getKW(kw,_rita->_gkw,_rita->_data_kw);
+         if (_key>=200) {
+            _data->setDataExt(_key);
+            continue;
+         }
+         switch (_key) {
 
             case   0:
                if (_cmd->setNbArg(1,"Give OFELI mesh file name.")) {
@@ -2391,7 +2297,7 @@ void mesh::Read()
                   _theMesh = new OFELI::Mesh;
                   _theMesh->get(msh_file,GMSH);
                   *_rita->ofh << "  read geo " << file << endl;
-                  _data->mesh_name.push_back("M"+to_string(_data->theMesh.size()));
+                  _data->NameMesh.push_back("M"+to_string(_data->theMesh.size()));
                   _data->theMesh.push_back(_theMesh);
                   _geo = true;
                   _generated = false;
@@ -2440,11 +2346,6 @@ void mesh::Read()
                break;
 
             case 104:
-            case 105:
-               _rita->setParam();
-                break;
-
-            case 106:
                if (_cmd->setNbArg(1,"Data name to be given.",1)) {
                   _rita->msg("print>","Missing data name.","",1);
                   break;
@@ -2453,12 +2354,12 @@ void mesh::Read()
                   _data->print(fn);
                break;
 
-            case 107:
+            case 105:
                _data->Summary();
                break;
 
-            case 108:
-            case 109:
+            case 106:
+            case 107:
                _ret = 0;
                return;
 
@@ -2618,7 +2519,7 @@ void mesh::Save()
    string file;
    *_rita->ofh << "  save" << endl;
    while (1) {
-      if (_cmd->readline("rita>mesh>save> ")<0)
+      if (_cmd->readline(sPrompt+"mesh>save> ")<0)
          continue;
 
       switch (_key=_cmd->getKW(_kw_save)) {

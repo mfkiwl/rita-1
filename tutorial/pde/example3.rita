@@ -6,9 +6,9 @@
 mesh
 
 # First define some mesh parameters
-  param h1=0.2
-  param h2=0.25*h1
-  param h3=0.2*h2
+  h1=0.2
+  h2=0.25*h1
+  h3=0.2*h2
 
 # Define points (vertices) of domain
   point  label=1  coord=-1.,-1. size=h1
@@ -45,9 +45,9 @@ mesh
   code  value=10 surfaces=1
 
 # Save geometry, generate mesh and save it in file
-  save  geo
+#  save  geo
   generate
-  save  mesh=example3.m
+#  save  mesh=example3.m
   end
 #
 # Set transient (time-dependent) analysis and give related parameters
@@ -61,21 +61,23 @@ transient  final-time=1.  time-step=0.01  scheme=backward-euler
 # Solution of the linear system is made by using the Conjugate Gradient method
 # coupled to the DILU preconditioner
 pde heat
-  field u
+  variable u
   bc code=1 value=0.
   bc code=2 value=1.
   in value=0.
   space feP1
   ls cg dilu
   end
-#
-# We output a summary of the problem to solve
-summary
+
+# Set history in sequence vector U
+history u U
 
 # Solve problem, output solution and save it in file
 # Note that we define saving parameters before running. This is necessary for transient problems
 # to make it possible to save while computing
 solve
-  save field=u file=example3.pos format=gmsh freq=2
   run
+
+# Save solution history in gmsh file
+save name=U file=example3.pos format=gmsh
 exit

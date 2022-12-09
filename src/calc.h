@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -42,25 +42,136 @@ class rita;
 class cmd;
 class data;
 
+
+class FunMatrix : public ICallback
+{
+ public:
+    FunMatrix() : ICallback(cmFUNC, _T(""), 1) {}
+    virtual void Eval(ptr_val_type& ret, const ptr_val_type* a_pArg, int /*a_iArgc*/);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
+class FunPrint : public ICallback
+{
+ public:
+    FunPrint() : ICallback(cmFUNC, _T("print"), 1) {}
+    virtual void Eval(ptr_val_type& ret, const ptr_val_type* a_pArg, int /*a_iArgc*/);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
+class FunListVar : public ICallback
+{
+public:
+
+	FunListVar() : ICallback(cmFUNC, _T("list_var"), 0) {}
+	virtual void Eval(ptr_val_type& ret, const ptr_val_type* /*a_pArg*/, int /*a_iArgc*/);
+	virtual const char_type* GetDesc() const;
+	virtual IToken* Clone() const;
+};
+
+
+class FunListConst : public ICallback
+{
+ public:
+
+   FunListConst() : ICallback(cmFUNC, _T("list_const"), 0) {}
+   virtual void Eval(ptr_val_type& ret, const ptr_val_type* /*a_pArg*/, int /*a_iArgc*/);
+	virtual const char_type* GetDesc() const;
+	virtual IToken* Clone() const;
+};
+
+
+class FunListFunctions : public ICallback
+{
+ public:
+    FunListFunctions() : ICallback(cmFUNC, _T("list_fun"), 0) {}
+    virtual void Eval(ptr_val_type& ret, const ptr_val_type* /*a_pArg*/, int /*a_iArgc*/);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
+class FunEnableOptimizer : public ICallback
+{
+ public:
+    FunEnableOptimizer() : ICallback(cmFUNC, _T("enable_optimizer"), 1) {}
+    void Eval(ptr_val_type& ret, const ptr_val_type* a_pArg, int /*a_iArgc*/);
+    const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
 class FctMatrix : public ICallback
 {
   public:
-     FctMatrix();
-     virtual ~FctMatrix();
+     FctMatrix() : ICallback(cmFUNC, _T("matrix"), -1) {}
+     virtual ~FctMatrix() {}
      virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc) override;
      virtual const char_type* GetDesc() const override;
      virtual IToken* Clone() const override;
 };
 
+
+class FunSelfTest : public ICallback
+{
+ public:
+    FunSelfTest() : ICallback(cmFUNC, _T("test"), 0) {}
+    virtual void Eval(ptr_val_type& ret, const ptr_val_type* /*a_pArg*/, int /*a_iArgc*/);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
+class FunEnableDebugDump : public ICallback
+{
+ public:
+    FunEnableDebugDump() : ICallback(cmFUNC, _T("debug"), 2) {}
+    virtual void Eval(ptr_val_type& ret, const ptr_val_type* a_pArg, int /*a_iArgc*/);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
+class FunGeneric : public ICallback
+{
+ public:
+    FunGeneric(string_type sIdent, string_type sFunction);
+    virtual ~FunGeneric() {}
+    virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int a_iArgc);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+
+ private:
+    ParserX m_parser;
+    mup::var_maptype m_vars;
+    val_vec_type m_val;
+};
+
+
+class FunDefine : public ICallback
+{
+ public:
+    FunDefine() : ICallback(cmFUNC, _T("define"), 2) {}
+    virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int a_iArgc);
+    virtual const char_type* GetDesc() const;
+    virtual IToken* Clone() const;
+};
+
+
 class FctVector : public ICallback
 {
-  public:
-     FctVector();
-     virtual ~FctVector();
-     virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc) override;
-     virtual const char_type* GetDesc() const override;
-     virtual IToken* Clone() const override;
+ public:
+    FctVector();
+    virtual ~FctVector();
+    virtual void Eval(ptr_val_type &ret, const ptr_val_type *a_pArg, int argc) override;
+    virtual const char_type* GetDesc() const override;
+    virtual IToken* Clone() const override;
 };
+
 
 class calc {
 
@@ -69,35 +180,30 @@ class calc {
     calc(rita* r, cmd* command);
     ~calc();
     int run();
-    int CheckKeywords(const std::string& ln, ParserXBase* p);
+    int CheckKeywords();
     int getVar(string_type& s);
-    ParserX *parser;
+    int setVector(const string& name, OFELI::Vect<double> *u);
+    int setMatrix(const string& name, OFELI::Matrix<double> *M);
 
  private:
  
     rita *_rita;
+    string _sLine;
     cmd *_cmd;
-    data *_data;
+    ParserX _parser;
     var_maptype _vmap;
-    OFELI::Vect<double> *_u;
-    OFELI::Matrix<double> *_M;
+    vector<Value *> _theV;
+    Value *_v;
+    map<string,Value> _sv;
 
-    static Value Help();
-    static void ListVar(const ParserXBase* p);
-    static void ListConst(const ParserXBase* p);
-    static void ListExprVar(const ParserXBase* p);
-    void setData(ParserXBase* p);
+    Value Help();
+    void ListVar();
+    void ListConst();
+    void ListExprVar();
+    void setData();
+    void parse();
 
-// Operator callback functions
-/*   static value_type Mega(value_type a_fVal) { return a_fVal * 1e6; }
-   static value_type Milli(value_type a_fVal) { return a_fVal / (value_type)1e3; }
-   static value_type Rnd(value_type v) { return v * std::rand() / (value_type)(RAND_MAX + 1.0); }
-   static value_type Not(value_type v) { return v == 0; }
-   static value_type Add(value_type v1, value_type v2) { return v1 + v2; }
-   static value_type Mul(value_type v1, value_type v2) { return v1 * v2; }
-   static value_type Arg2Of2(value_type v1, value_type v2) { return v2; }
-   static value_type Arg1Of2(value_type v1, value_type v2) { return v1; }*/
-   void addVar();
+    void addVar();
 
 };
 

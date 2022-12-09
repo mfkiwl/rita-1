@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -171,19 +171,14 @@ int approximation::run()
                break;
 
             case 104:
+               break;
+
             case 105:
-               _rita->setParam();
-               break;
-
-            case 106:
-               break;
-
-            case 107:
                _data->Summary();
                break;
 
-            case 108:
-            case 109:
+            case 106:
+            case 107:
                if (approx_count>1) {
                   _rita->msg("approximation>","More than one approximation method given.");
                   return 1;
@@ -341,10 +336,10 @@ int approximation::lagrange()
    var.push_back("x");
    _data->addFunction(p,var,"");
    _data->setTab2Grid(_tab);
-   _data->setTab2Field(_tab);
+   _data->setTab2Vector(_tab);
    if (_verb)
       cout << "Lagrange interpolation created. Lagrange polynomial is: " 
-           << _data->fct_name[_data->iFct] << endl;
+           << _data->NameFct[_data->iFct] << endl;
    return 0;
 }
 
@@ -366,10 +361,10 @@ int approximation::piecewise_lagrange()
       _y[i] = _tab->Funct[0].Val(i+1);
    }
    _data->setTab2Grid(_tab);
-   _data->setTab2Field(_tab);
+   _data->setTab2Vector(_tab);
    if (_verb)
-      cout << "Piecewise Lagrange interpolation created. Interpolated field is: " 
-           << _data->Field[_data->iField] << endl;
+      cout << "Piecewise Lagrange interpolation created. Interpolated vector is: " 
+           << _data->Vector[_data->iVector] << endl;
    return 0;
 }
 

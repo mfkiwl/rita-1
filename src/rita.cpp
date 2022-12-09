@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -41,7 +41,6 @@
 #include "eigen.h"
 #include "integration.h"
 #include "approximation.h"
-#include "help.h"
 #include "configure.h"
 
 using std::cout;
@@ -57,60 +56,20 @@ const string currentDateTime() {
 }
 
 
-int main(int argc, char *argv[])
-{
-   std::time_t t = std::time(0);
-   std::tm* now = std::localtime(&t);
-   cout << "\n     R I T A     1.0\n";
-   cout << "     Last update " << (now->tm_year+1900) << '-' << (now->tm_mon+1)
-        << '-' <<  now->tm_mday << "\n";
-   cout << "     Copyright (C) 2021, Rachid Touzani\n\n";
-   cout << "Type \"help\" or \"license\" for more information." << endl;
-   cout << "rita web site:   http://ofeli.org/rita\n" << endl;
-   int ret = 0;
-
-   try {
-      RITA::rita r;
-      if (argc>1) {
-         if (string(argv[1])=="-h") {
-            cout << RITA::H0;
-            return 0;
-         }
-         else if (string(argv[1])=="--help") {
-            cout << RITA::H1;
-            return 0;
-         }
-         else if (string(argv[1])=="-v" || string(argv[1])=="--version") {
-            cout << "rita, Release 1.0" << endl;
-            return 0;
-         }
-         else if (argv[1][0]=='-') {
-            cout << "Input error: Unknown argument." << endl;
-            return 1;
-         }
-         else
-            r.setInput(string(argv[1]),0);
-      }
-      ret = r.run();
-   } CATCH_RITA_EXCEPTION
-   return ret;
-}
-
-
 namespace RITA {
 
 rita::rita()
      : meshOK(false), solveOK(false), dataOK(false), _load(false), _ae(nullptr),
        _script_file(""), _in(nullptr), _verb(1), _ret(0),
-       _default_field(true), _analysis_type(NONE)
+       _default_vector(true), _analysis_type(NONE)
 {
    _cmd = new cmd(this);
    _configure = new configure(this,_cmd);
-   _mesh = new mesh(this,_cmd,_configure);
+   _calc = new calc(this,_cmd);
    _data = new data(this,_cmd,_configure);
+   _mesh = new mesh(this,_cmd,_configure);
    _help = new help;
    _solve = new solve(this,_cmd,_configure);
-   _calc = new calc(this,_cmd);
    ofl = _configure->getOStreamLog();
    ofh = _configure->getOStreamHistory();
    _solve->setSave(_configure->getSaveResults());
@@ -157,16 +116,19 @@ void rita::setInput(string file,
 
 int rita::run()
 {
-   static const vector<string> kw {"load","unload","calc$ulator","data","mesh","stat$ionary","trans$ient",
-                                   "eigen","optim","approx$imation","integ$ration","algebraic","ode","pde",
-                                   "solve","clear"};
-   int key = 0;
-   string fn="";
-   while (1) {
-      if (_cmd->readline("rita> ")<0)
+   int key=0;
+   string fn="", td="";
+   for (;;) {
+
+      if (_cmd->readline(sPrompt+" ")<0)
          continue;
       _nb_args = _cmd->getNbArgs();
-      switch (key=_cmd->getKW(kw,_gkw)) {
+      key = _cmd->getKW(_rita_kw,_gkw,_data_kw);
+      if (key>=200) {
+         _data->setDataExt(key);
+         continue;
+      }
+      switch (key) {
 
          case   0:
             Load();
@@ -178,43 +140,35 @@ int rita::run()
             _in = nullptr;
             break;
 
-         case   2:
-            setCalc();
-            break;
-
-         case   3:
-            setData();
-            break;
-
-         case   4:
+         case 201:
             setMesh();
             break;
 
-         case   5:
+         case   2:
             setStationary();
             break;
 
-         case   6:
+         case   3:
             setTransient();
             break;
 
-         case   7:
+         case   4:
             setEigen();
             break;
 
-         case   8:
+         case   5:
             setOptim();
             break;
 
-         case   9:
+         case   6:
             setApproximation();
             break;
 
-         case  10:
+         case   7:
             setIntegration();
             break;
 
-         case  11:
+         case   8:
             _ret = runAE();
             if (_ret && _ae!=nullptr) {
                delete _ae;
@@ -222,7 +176,7 @@ int rita::run()
             }
             break;
 
-         case  12:
+         case   9:
             _ret = runODE();
             if (_ret && _ae!=nullptr) {
                delete _ae;
@@ -230,7 +184,7 @@ int rita::run()
             }
             break;
 
-         case  13:
+         case  10:
             _ret = runPDE();
             if (_ret && _pde!=nullptr) {
                delete _pde;
@@ -238,18 +192,20 @@ int rita::run()
             }
             break;
 
-         case  14:
+         case  11:
             setSolve();
             break;
 
-         case  15:
+         case  12:
             setClear();
             break;
 
          case 100:
+            _help->run(0);
+            break;
+
          case 101:
-            _help->setVerbose(_verb);
-            _help->run();
+            _help->run(1);
             break;
 
          case 102:
@@ -263,34 +219,14 @@ int rita::run()
 
          case 104:
          case 105:
-            setParam();
-            break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case 107:
-            _data->Summary();
-            break;
-
-         case 108:
-         case 109:
+            msg("","No higher level available");
             break;
 
          default:
-            msg("","Unknown command: "+_cmd->token(),
-                "Available commands: license, load, unload, calc, data, mesh, stationary, transient\n"
-                "                    eigen, optim, approximation, integration, algebraic, ode, pde\n"
-                "                    solve\n"
-                "Global commands:    help, ?, set, parameter, print, summary, quit, exit");
+            _ret = _calc->run();
             break;
       }
+
    }
    return 0;
 }
@@ -306,7 +242,7 @@ void rita::finish()
 void rita::getLicense()
 {
    _cmd->setNbArg(0);
-   cout << "Copyright (C) 2021, Rachid Touzani\n";
+   cout << "Copyright (C) 2022, Rachid Touzani\n";
    cout << "rita is free software: you can redistribute it and/or modify\n";
    cout << "it under the terms of the GNU General Public License as published by\n";
    cout << "the Free Software Foundation, either version 3 of the License, or\n";
@@ -345,17 +281,7 @@ void rita::Load()
    run();
 }
 
-
-void rita::setCalc()
-{
-   if (_verb>1)
-      cout << "Entering module 'calc' ..." << endl;
-   _ret = _calc->run();
-   if (_verb>1)
-      cout << "Leaving module 'calc' ..." << endl;
-}
-
-
+/*
 void rita::setData()
 {
    if (_verb>1)
@@ -371,40 +297,10 @@ void rita::setData()
    }
    if (_verb>1)
       cout << "Leaving module 'data' ..." << endl;
-}
+}*/
 
 
-void rita::setParam()
-{
-   int verb = 1;
-   string_type ln = _cmd->mp();
-   if (ln=="") {
-      msg("param>","No given parameter.");
-      return;
-   }
-   *ofh << "parameter " << ln << endl;
-   if (ln[ln.size()-1]==';') {
-      verb = 0;
-      ln.pop_back();
-   }
-   if (_calc->CheckKeywords(ln,_calc->parser)==0) {
-      _calc->parser->SetExpr(ln);
-      if (verb)
-         cout << std::setprecision(12) << " = " << _calc->parser->Eval() << endl;
-   }
-   if (_calc->parser->Eval().GetType()!='i' && _calc->parser->Eval().GetType()!='f') {
-      msg("param>","This type of data is not allowed for command param.","");
-      return;
-   }
-   string s;
-   if (_calc->getVar(s)==0)
-      _data->addParam(s,Value(_calc->parser->Eval()).GetFloat());
-   if (_verb>1)
-      cout << "Leaving module 'parameter' ..." << endl;
-}
-
-
-void rita::setMesh()
+int rita::setMesh()
 {
    if (_verb>1)
       cout << "Entering module 'mesh' ..." << endl;
@@ -415,6 +311,7 @@ void rita::setMesh()
    _ret = _mesh->run();
    if (_verb>1)
       cout << "Leaving module 'mesh' ..." << endl;
+   return _ret;
 }
 
 
@@ -429,6 +326,7 @@ void rita::setTransient()
    string fn="";
    int ret = 0;
    _analysis_type = TRANSIENT;
+   _data->save_freq = 0;
    _scheme = "backward-euler";
    _adapted_time_step = 0;
    double it=_init_time, ft=_final_time, ts=_time_step;
@@ -445,8 +343,8 @@ void rita::setTransient()
                            "adapted: Toggle to choose (or not) adaptive time stepping.\n";
    static const vector<string> kw_scheme {"forward-euler","backward-euler","crank-nicolson","heun","newmark",
                                           "leap-frog","AB2","RK4","RK3-TVD","BDF2","builtin"};
-   static const vector<string> kw {"initial$-time","final$-time","time$-step","adapted","scheme"};
-   _cmd->set(kw,_gkw);
+   static const vector<string> kw {"initial$-time","final$-time","time$-step","adapted","scheme","save-every"};
+   _cmd->set(kw,_gkw,_data_kw);
    _nb_args = _cmd->getNbArgs();
    if (_nb_args==0) {
       msg("transient>","No argument for command.",H);
@@ -458,7 +356,12 @@ void rita::setTransient()
       _ret = 1;
    }
    for (int k=0; k<_nb_args; ++k) {
-      switch (_cmd->getArg()) {
+      int key = _cmd->getArg();
+      if (key>=200) {
+         _data->setDataExt(key);
+         continue;
+      }
+      switch (key) {
 
          case 100:
          case 101:
@@ -483,6 +386,10 @@ void rita::setTransient()
 
          case   4:
             _scheme = _cmd->string_token();
+            break;
+
+         case   5:
+            _data->save_freq = _cmd->int_token();
             break;
 
          default:
@@ -520,11 +427,15 @@ void rita::setTransient()
       _cmd->setNbArg(0);
       *ofh << "transient" << endl;
       while (1) {
-         int nb = _cmd->readline("rita>transient> ");
+         int nb = _cmd->readline(sPrompt+"transient> ");
          if (nb<0)
             continue;
-         int key = 0;
-         switch (key=_cmd->getKW(kw,_gkw)) {
+         int key = _cmd->getKW(kw,_gkw,_data_kw);
+         if (key>=200) {
+            _data->setDataExt(key);
+            continue;
+         }
+         switch (key) {
 
             case   0:
                if (_cmd->setNbArg(1,"Initial time to be given.")) {
@@ -593,24 +504,6 @@ void rita::setTransient()
                _verb = _configure->getVerbose();
                break;
 
-            case 104:
-            case 105:
-               setParam();
-               break;
-
-            case 106:
-               if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-                  msg("print>","Missing data name.","",1);
-                  break;
-               }
-               if (!_cmd->get(fn))
-                  _data->print(fn);
-               break;
-
-            case 107:
-               _data->Summary();
-               break;
-
             case 108:
             case 109:
                *ofh << "  end" << endl;
@@ -632,7 +525,7 @@ void rita::setTransient()
             default:
                msg("transient>","Unknown command "+_cmd->token(),
                    "Available commands: initial-time, final-time, time-step, scheme, end, <\n"
-                   "Global commands:    help, ?, set, parameter, print, summary, quit, exit");
+                   "Global commands:    help, ?, license, end, <");
                break;
          }
       }
@@ -769,30 +662,11 @@ void rita::setSolve()
 void rita::msg(const string& loc, const string& m1, const string& m2, int c)
 {
    if (c==0) {
-   cout << "Error: " << m1 << endl;
-   if (m2!="")
-      cout << m2 << endl;
+      cout << "Error: " << m1 << endl;
+      if (m2!="")
+         cout << m2 << endl;
    }
-   *ofl << "In rita>" + loc + ": " << m1 << endl;
-}
-
-
-odae::odae()
-     : isSet(false), log(false), isFct(false), field(-1)
-{
-}
-
-
-void odae::setVars(int opt)
-{
-   if (opt)
-      vars.push_back("t");
-   if (size==1)
-      vars.push_back(fn);
-   else {
-      for (int i=0; i<size; ++i)
-         vars.push_back(fn+to_string(i+1));
-   }
+   *ofl << "In " + sPrompt+loc + ": " << m1 << endl;
 }
 
 } /* namespace RITA */

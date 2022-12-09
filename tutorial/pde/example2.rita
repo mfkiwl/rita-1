@@ -4,12 +4,12 @@
 # Generate mesh of thea rectangle (0,3)x(0,1)
 # We generate a uniform 40x20 mesh using native tools
 # All boundary nodes have code 1
-param H=1.
-param L=3*H
+H=1.
+L=3*H
 mesh
-  param nx=40
-  param ny=20
-  rectangle min=0.,0. max=L,H codes=1  ne=nx,ny  save=example2.m
+  nx=40
+  ny=20
+  rectangle min=0.,0. max=L,H codes=1  ne=nx,ny
   end
 #
 # We set stationary analysis (This is the default, so the following line is unnecessary)
@@ -19,7 +19,7 @@ stationary
 # The unknown is u
 # We next impose Dirichlet boundary conditions and a source term
 pde laplace
-  field u
+  var u
 
 # Dirichlet boundary condition
   bc code=1 value=sin(pi*x)*exp(y)
@@ -33,8 +33,9 @@ pde laplace
 #
 # Solve problem, output solution and save it in file
 solve
-  save file=example2.pos
   run
+  save name=u format=gmsh file=ex2.pos
+
 # Set analytical solution to compute error
   analytic definition=sin(pi*x)*exp(y)
   error

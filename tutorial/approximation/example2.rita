@@ -3,6 +3,6 @@
 # rita creates a vector (or field) which is the interpolated vector
 #
 approximation name=Tab1 file=ex2.dat piecewise_lagrange
-print f
-print Tab1
+= f
+= Tab1
 exit

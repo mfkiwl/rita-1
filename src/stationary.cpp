@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -40,7 +40,7 @@ stationary::stationary(rita *r)
            : _rita(r), _rs(1)
 {
    _data = _rita->_data;
-   _nb_fields = _data->nb_fields;
+   _nb_vectors = _data->nb_vectors;
 }
 
 
@@ -62,30 +62,30 @@ void stationary::setSave(vector<int>&    isave,
 int stationary::run()
 {
    int ret = 0;
-   vector<ofstream> fs(_nb_fields+1), ffs(_nb_fields+1), pfs(_nb_fields+1);
-   vector<OFELI::IOField> ff(_nb_fields+1);
-   vector<string> fn(_nb_fields+1);
+   vector<ofstream> fs(_nb_vectors+1), ffs(_nb_vectors+1), pfs(_nb_vectors+1);
+   vector<OFELI::IOField> ff(_nb_vectors+1);
+   vector<string> fn(_nb_vectors+1);
 
    try {
-      for (int e=1; e<=_data->nb_ae; ++e) {
+/*      for (int e=1; e<=_data->nb_ae; ++e) {
          _ae_eq = _data->theAE[e];
-         int f = _ae_eq->field;
+         int f = _ae_eq->vect;
          fn[f] = "rita-" + to_string(10*e+f) + ".sol";
-      }
-      for (int e=1; e<=_data->nb_pde; ++e) {
+      }*/
+/*      for (int e=1; e<=_data->nb_pde; ++e) {
          _pde_eq = _data->thePDE[e];
-         for (int i=0; i<_pde_eq->nb_fields; ++i) {
-            int f = _pde_eq->fd[i].field;
+         for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+            int f = _pde_eq->fd[i].vect;
             fn[f] = "rita-" + to_string(10*e+f) + ".sol";
          }
-      }
+      }*/
 
 //      if (_nb_eq==1) {
          for (int e=1; e<=_data->nb_ae && _rs; ++e) {
             _ae_eq = _data->theAE[e];
-            int f = _ae_eq->field;
-            _data->u[f]->resize(_ae_eq->size);
-            *_data->u[f] = _ae_eq->y;
+            int f = _ae_eq->vect;
+            _data->theVector[f]->resize(_ae_eq->size);
+            *_data->theVector[f] = _ae_eq->y;
             fs[f].open(fn[f].c_str(),std::fstream::out);
             fs[f] << "# Saved by rita: Solution of Algebraic Equation, equation: 1" << endl;
             fs[f] << 0.;
@@ -104,8 +104,8 @@ int stationary::run()
 
          for (int e=1; e<=_data->nb_pde && _rs; ++e) {
             _pde_eq = _data->thePDE[e];
-            for (int i=0; i<_pde_eq->nb_fields; ++i) {
-               int f = _pde_eq->fd[i].field;
+            for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+               int f = _pde_eq->fd[i].vect;
                ff[f].open(fn[f],OFELI::IOField::OUT);
             }
          }
@@ -114,8 +114,8 @@ int stationary::run()
          for (int e=0; e<_nb_eq; ++e) {
             if ((*_eq_type)[e]==ALGEBRAIC_EQ) {
                int f = _alg_eq[e]->field;
-               _data->u[f]->resize(_alg_eq[e]->size);
-               *_data->u[f] = _alg_eq[e]->y;
+               _data->theField[f]->resize(_alg_eq[e]->size);
+               *_data->theField[f] = _alg_eq[e]->y;
                if ((*_isave)[f] && _rs) {
                   ffs[f].open((*_save_file)[e].c_str(),std::fstream::out);
                   ffs[f] << "  " << _alg_eq[e]->y;
@@ -129,7 +129,7 @@ int stationary::run()
                }
             }
             else if ((*_eq_type)[e]==PDE_EQ && _rs) {
-               for (int i=0; i<_pde_eq[e]->nb_fields; ++i) {
+               for (int i=0; i<_pde_eq[e]->nb_vectors; ++i) {
                   int f = _pde_eq[e]->fd[i].field;
                   ff[_pde_eq[e]->fd[i].field].open(fn[f],OFELI::IOField::OUT);
                }
@@ -147,12 +147,12 @@ int stationary::run()
          for (int i=0; i<_ae_eq->size; ++i)
             nls.setf(_ae_eq->theFct[i]);
          nls.run();
-         *_data->u[_ae_eq->field] = _ae_eq->y;
+         *_data->theVector[_ae_eq->vect] = _ae_eq->y;
       }
 
       for (int e=1; e<=_data->nb_pde; ++e) {
          _pde_eq = _data->thePDE[e];
-         _pde_eq->theEquation->setInput(SOLUTION,*_data->u[_pde_eq->fd[0].field]);
+         _pde_eq->theEquation->setInput(SOLUTION,*_data->theVector[_pde_eq->fd[0].vect]);
          _pde_eq->theEquation->setSolver(_pde_eq->ls,_pde_eq->prec);
          if (_pde_eq->set_bc) {
             if (_pde_eq->bc.withRegex(1)) {
@@ -175,18 +175,18 @@ int stationary::run()
          }
          ret = _pde_eq->theEquation->run();
 
-         for (int i=0; i<_pde_eq->nb_fields; ++i) {
-            int f = _pde_eq->fd[i].field;
-	    //            _data->u[f]->setName(_data->Field[f]);
+/*         for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+            int f = _pde_eq->fd[i].vect;
+	    //            _data->theField[f]->setName(_data->Field[f]);
             if (_rs) {
                ff[f].open(fn[f],OFELI::IOField::OUT);
-               ff[f].put(*_data->u[f]);
+               ff[f].put(*_data->theVector[f]);
                ff[f].close();
                if ((*_isave)[f])
                   OFELI::saveFormat(*_data->theMesh[_data->iMesh],fn[f],(*_save_file)[f],
                                     (*_fformat)[f],(*_isave)[f]);
             }
-         }
+         }*/
       }
    } CATCH
    return ret;

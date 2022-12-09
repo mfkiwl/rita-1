@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -111,6 +111,7 @@ class cmd {
    int get(const vector<string>& kw, string& s);
    int getKW(const vector<string> &kw);
    int getKW(const vector<string> &kw1, const vector<string> &kw2);
+   int getKW(const vector<string> &kw1, const vector<string> &kw2, const vector<string>& kw3);
    int getScriptLineNb() const { return _script_line_nb; }
    string token() const { return _word[_ind-1]; }
    string buffer() const { return _buffer; }
@@ -127,7 +128,8 @@ class cmd {
    string Arg() const { return _arg; }
    void set(const vector<string>& arg);
    void set(const vector<string>& arg1, const vector<string>& arg2);
-   const vector<string> *_kw, *_gkw;
+   void set(const vector<string>& arg1, const vector<string>& arg2, const vector<string>& arg3);
+   const vector<string> *_kw, *_gkw, *_dkw;
    string& trim(string& s, const string& chars = "\t\n\v\f\r ");
    int find_kw(const string &arg);
    bool isValidNumber(const string& s);

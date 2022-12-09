@@ -6,7 +6,7 @@
 #
 # ==============================================================================
 #
-#   Copyright (C) 2021 - 2022  Rachid Touzani
+#   Copyright (C) 2021 - 2023  Rachid Touzani
 #
 #   This file is part of rita.
 #
@@ -26,11 +26,12 @@ project (eigen)
 
 file (COPY example1.rita m.dat DESTINATION .)
 
-add_test (eigen-1 ${CMAKE_RITA_EXEC} example1.rita)
+add_test (eigen-1 ${CMAKE_RITA_EXEC} example1.rita example2.rita)
 
 install (FILES
          README.md
          example1.rita
+         example2.rita
          m.dat
          DESTINATION ${INSTALL_TUTORIALDIR}/${PROJECT_NAME}
         )

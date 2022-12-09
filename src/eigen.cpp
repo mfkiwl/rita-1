@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -61,11 +61,11 @@ int eigen::run()
    symm = eig_vec = false;
    nb_eigv = 0;
 
-   static const vector<string> kw {"matrix","symm$etric","method","nb","eigv","evect","summary"};
+   static const vector<string> kw {"matrix","symm$etric","method","nb","eigv","evect"};
    _cmd->set(kw,_rita->_gkw);
    int nb_args = _cmd->getNbArgs();
    if (nb_args==0) {
-      _rita->msg("eigen>","No argument to command");
+      _rita->msg("eigen>","No argument to command.\nAvailable arguments: matrix, symmetric, method, nb, eigv, evect, summary","");
       NO_EIGEN
       return 0;
    }
@@ -117,8 +117,8 @@ int eigen::run()
          NO_EIGEN
          return 1;
       }
-      int k = _data->checkMatrix(mat_name);
-      if (k<0) {
+      int k = _data->checkName(mat_name,DataType::MATRIX);
+      if (k==0) {
          _rita->msg("eigen>","Matrix "+mat_name+" not defined.");
          NO_EIGEN
          return 1;
@@ -156,15 +156,15 @@ int eigen::run()
          evect = mat_name+"-ev";
       if (eig_vec) {
          for (int i=1; i<=nb_eigv; ++i) {
-            _data->addField(evect+"-"+to_string(i)+"r");
-            _data->addField(evect+"-"+to_string(i)+"i");
+            _data->addVector(evect+"-"+to_string(i)+"r");
+            _data->addVector(evect+"-"+to_string(i)+"i");
          }
       }
       eval = mat_name + "-ev";
-      _data->addField(eval+"-r");
-      _data->addField(eval+"-i");
-      _data->u[_data->FieldName[eval+"-r"]]->setSize(nb_eigv);
-      _data->u[_data->FieldName[eval+"-i"]]->setSize(nb_eigv);
+      _data->addVector(eval+"-r");
+      _data->addVector(eval+"-i");
+      _data->theVector[_data->VectorName[eval+"-r"]]->setSize(nb_eigv);
+      _data->theVector[_data->VectorName[eval+"-i"]]->setSize(nb_eigv);
    }
 
    else {
@@ -192,10 +192,10 @@ void eigen::print(ostream& s) const
    for (int i=1; i<=nb_eigv; ++i) {
       s << "Eigenvalue #" << i << ": ";
       if (symm)
-         s << (*_data->u[_data->FieldName[eval+"-r"]])(i) << endl;
+         s << (*_data->theVector[_data->VectorName[eval+"-r"]])(i) << endl;
       else
-      s << (*_data->u[_data->FieldName[eval+"-r"]])(i)
-        << " + " << (*_data->u[_data->FieldName[eval+"-i"]])(i) << "I" << endl;
+      s << (*_data->theVector[_data->VectorName[eval+"-r"]])(i)
+        << " + " << (*_data->theVector[_data->VectorName[eval+"-i"]])(i) << "I" << endl;
    }
    if (!eig_vec || verbose==1)
       return;
@@ -204,11 +204,11 @@ void eigen::print(ostream& s) const
       s << "Eigenvector " << i << ": ";
       if (symm)
          for (int j=1; j<=size; ++i)
-            s << (*_data->u[_data->FieldName[eval+"-r"]])(i) << endl;
+            s << (*_data->theVector[_data->VectorName[eval+"-r"]])(i) << endl;
       else
          for (int j=1; j<=size; ++i)
-            s << (*_data->u[_data->FieldName[eval+"-r"]])(i) << " + " 
-              <<  (*_data->u[_data->FieldName[eval+"-i"]])(i) << "I" << endl;
+            s << (*_data->theVector[_data->VectorName[eval+"-r"]])(i) << " + " 
+              << (*_data->theVector[_data->VectorName[eval+"-i"]])(i) << "I" << endl;
    }
 }
 

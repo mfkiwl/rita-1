@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -46,7 +46,7 @@ transient::transient(rita *r)
    _nb_ae = _data->nb_ae;
    _nb_ode = _data->nb_ode;
    _nb_pde = _data->nb_pde;
-   _nb_fields = _data->nb_fields;
+   _nb_vectors = _data->nb_vectors;
    theTimeStep = _time_step = _rita->_time_step;
    _init_time = _rita->_init_time;
    theFinalTime = _final_time = _rita->_final_time;
@@ -66,9 +66,9 @@ int transient::setPDE(OFELI::TimeStepping& ts,
       ts.set(_rita->_sch[_rita->_scheme],_time_step,_final_time);
       ts.setPDE(*(_pde_eq->theEquation));
       ts.setLinearSolver(_pde_eq->ls,_pde_eq->prec);
-      ts.setInitial(*_data->u[_pde_eq->fd[0].field]);
+      ts.setInitial(*_data->theVector[_pde_eq->fd[0].vect]);
       if (_pde_eq->eq=="incompressible-navier-stokes" && _pde_eq->Sdm==equa::FE_P1)
-         _pde_eq->theEquation->setInput(PRESSURE_FIELD,*_data->u[_pde_eq->fd[1].field]);
+         _pde_eq->theEquation->setInput(PRESSURE_FIELD,*_data->theVector[_pde_eq->fd[1].vect]);
    } CATCH
    return 0;
 }
@@ -99,9 +99,9 @@ void transient::setSave(vector<int>&    isave,
 int transient::run()
 {
    OFELI::Verbosity = 1;
-   vector<ofstream> fs(_nb_fields), ffs(_nb_fields), pfs(_nb_fields);
-   vector<OFELI::IOField> ff(_nb_fields);
-   vector<string> fn(_nb_fields);
+   vector<ofstream> fs(_nb_vectors), ffs(_nb_vectors), pfs(_nb_vectors);
+   vector<OFELI::IOField> ff(_nb_vectors);
+   vector<string> fn(_nb_vectors);
    OFELI::ODESolver ode;
    OFELI::NLASSolver nlas;
    OFELI::TimeStepping ts;
@@ -110,33 +110,33 @@ int transient::run()
       _ode_eq = _data->theODE[e];
       ode.set(_ode_eq->scheme,_time_step,_final_time);
       ode.setNbEq(_ode_eq->size);
-      int f = _ode_eq->field;
-      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
+//      int f = _ode_eq->vect;
+//      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
    }
 
-   for (int e=1; e<=_nb_ae; ++e) {
+  for (int e=1; e<=_nb_ae; ++e) {
       _ae_eq = _data->theAE[e];
       nlas.set(_ae_eq->nls);
       nlas.setNbEq(_ae_eq->size);
-      int f = _data->theAE[e]->field;
-      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
+//      int f = _data->theAE[e]->vect;
+//      fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
    }
 
    for (int e=1; e<=_nb_pde; ++e) {
       _pde_eq = _data->thePDE[e];
       setPDE(ts,e);
-      for (int i=0; i<_pde_eq->nb_fields; ++i) {
-         int f = _pde_eq->fd[i].field;
+/*      for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+         int f = _pde_eq->fd[i].vect;
          fn[f-1] = "rita-" + to_string(10*e+f) + ".sol";
-      }
+      }*/
    }
 //   if (_nb_eq==1) {
       for (int e=1; e<=_nb_ode; ++e) {
          _ode_eq = _data->theODE[e];
-         int f = _ode_eq->field;
-         _data->u[f]->resize(_ode_eq->size);
-         *_data->u[f] = _ode_eq->y;
-         if (_rs) {
+         int f = _ode_eq->vect;
+         _data->theVector[f]->resize(_ode_eq->size);
+         *_data->theVector[f] = _ode_eq->y;
+/*         if (_rs) {
             fs[f-1].open(fn[f-1].c_str(),std::fstream::out);
             fs[f-1] << "# Saved by rita: Solution of ODE, equation: 1" << endl;
             fs[f-1] << 0.;
@@ -155,25 +155,36 @@ int transient::run()
                pfs[f-1].open((*_phase_file)[f].c_str());
                pfs[f-1] << "# Saved by rita: Phase portrait of ODE, equation: 1" << endl;
             }
-         }
+         }*/
          if (_ode_eq->size==1)
             ode.setInitial(_ode_eq->y[0]);
          else
             ode.setInitial(_ode_eq->y);
+         string fh = _data->vect_hist[_ode_eq->fn];
+         if (fh!="%$§&")
+            _data->theHVector[_data->checkName(fh,DataType::HVECTOR)]->set(_ode_eq->y,theTime);
       }
       for (int e=1; e<=_nb_pde && _rs; ++e) {
          _pde_eq = _data->thePDE[e];
-         for (int i=0; i<_pde_eq->nb_fields; ++i) {
-            int f = _pde_eq->fd[i].field;
-            ff[f-1].open(fn[f-1],OFELI::IOField::OUT);
+         for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+            int f = _pde_eq->fd[i].vect;
+            string fh = _data->vect_hist[_pde_eq->fd[i].fn];
+            _data->theVector[f]->setTime(theTime);
+            _data->theVector[f]->setName(_data->Vector[f]);
+            if (fh!="%$§&")
+               _data->theHVector[_data->checkName(fh,DataType::HVECTOR)]->set(*(_data->theVector[f]),theTime);
          }
+/*         for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+            int f = _pde_eq->fd[i].vect;
+            ff[f-1].open(fn[f-1],OFELI::IOField::OUT);
+         }*/
       }
 //   }
 /*   else {
       for (int e=0; e<_nb_eq; ++e) {
          int f = _ode_eq[e]->field;
-         _data->u[f]->resize(_ode_eq[e]->size);
-         *_data->u[f] = _ode_eq[e]->y;
+         _data->theField[f]->resize(_ode_eq[e]->size);
+         *_data->theField[f] = _ode_eq[e]->y;
          if ((*_isave)[e]) {
             ffs[f].open((*_save_file)[e].c_str(),std::fstream::out);
             ffs[f] << "  " << _ode_eq[e]->y;
@@ -239,32 +250,20 @@ int transient::run()
 
          for (int e=1; e<=_nb_ode; ++e) {
             _ode_eq = _data->theODE[e];
-            int f = _ode_eq->field;
-            OFELI::Vect<double> z(_ode_eq->size);
+            int f = _ode_eq->vect;
             ode.runOneTimeStep();
             if (_ode_eq->size==1)
                _ode_eq->y[0] = ode.get();
-            *_data->u[f] = _ode_eq->y;
-            if (_rs) {
-               fs[f-1] << theTime;
-               for (int i=0; i<_ode_eq->size; ++i)
-                  fs[f-1] << "  " << _ode_eq->y[i];
-               fs[f-1] << endl;
-            }
-            if ((*_isave)[f]) {
-               if (theStep%(*_isave)[f]==0) {
-                  ffs[f-1] << theTime;
-                  for (int i=0; i<_ode_eq->size; ++i)
-                     ffs[f-1] << "  " << _ode_eq->y[i];
-                  ffs[f-1] << endl;
-                  if (_phase) {
-                     ode.getTimeDerivative(z);
-                     pfs[f-1] << _ode_eq->y[0] << "  ";
-                     for (int i=0; i<_ode_eq->size; ++i)
-                        pfs[f-1] << ode.getTimeDerivative(i+1) << "  ";
-                     pfs[f-1] << endl;
-                  }
-               }
+            *_data->theVector[f] = _ode_eq->y;
+            string fh = _data->vect_hist[_ode_eq->fn];
+            if (fh!="%$§&")
+               _data->theHVector[_data->checkName(fh,DataType::HVECTOR)]->set(_ode_eq->y,theTime);
+            if (_ode_eq->phase!="") {
+               _ode_eq->ph.setSize(_ode_eq->size);
+               ode.getTimeDerivative(_ode_eq->ph);
+               string fh = _data->vect_hist[_ode_eq->phase];
+               if (fh!="%$§&")
+                  _data->theHVector[_data->checkName(fh,DataType::HVECTOR)]->set(_ode_eq->ph,theTime);
             }
          }
 
@@ -299,30 +298,18 @@ int transient::run()
 
             ts.runOneTimeStep();
 
-//          Save in native OFELI format file
-            for (int i=0; i<_pde_eq->nb_fields; ++i) {
-               int f = _pde_eq->fd[i].field;
-               _data->u[f]->setTime(theTime);
-               _data->u[f]->setName(_data->Field[f]);
-               if (_rs)
-                  ff[f-1].put(*_data->u[f]);
+            for (int i=0; i<_pde_eq->nb_vectors; ++i) {
+               int f = _pde_eq->fd[i].vect;
+               string fh = _data->vect_hist[_pde_eq->fd[i].fn];
+               _data->theVector[f]->setTime(theTime);
+               _data->theVector[f]->setName(_data->Vector[f]);
+               if (fh!="%$§&")
+                  _data->theHVector[_data->checkName(fh,DataType::HVECTOR)]->set(*(_data->theVector[f]),theTime);
             }
          }
       }
    } CATCH
 
-   theTime -= theTimeStep;
-   for (int e=1; e<=_nb_pde; ++e) {
-      _pde_eq = _data->thePDE[e];
-      for (int i=0; i<_pde_eq->nb_fields; ++i) {
-         int f = _pde_eq->fd[i].field;
-         if (_rs) {
-            ff[f-1].close();
-            OFELI::saveFormat(*(_data->theMesh[_data->iMesh]),fn[f-1],(*_save_file)[e],(*_fformat)[f],
-                              (*_isave)[e]);
-         }
-      }
-   }
    return 0;
 }
 

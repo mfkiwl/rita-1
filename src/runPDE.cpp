@@ -6,7 +6,7 @@
 
   ==============================================================================
 
-    Copyright (C) 2021 - 2022 Rachid Touzani
+    Copyright (C) 2021 - 2023 Rachid Touzani
 
     This file is part of rita.
 
@@ -28,6 +28,7 @@
 
 #include "rita.h"
 #include "data.h"
+#include "calc.h"
 #include "equa.h"
 #include "cmd.h"
 #include "configure.h"
@@ -39,31 +40,31 @@ namespace RITA {
 int rita::runPDE()
 {
    _pde = new equa(this);
-   string pde_name, fn="";
-   int ret=0;
+   string pde_id, name="", fn="", file="", lin_solv="";
+   int ret=0, every=0;
    if (_cmd->setNbArg(1,"Give PDE name.")) {
       msg("pde>","Missing pde name.","",1);
       return 1;
    }
    static const vector<string> pn {"laplace","heat","wave","transport","linear-elasticity",
                                    "truss","beam","incompressible-navier-stokes","clear"};
-   ret = _cmd->get(pn,pde_name);
+   ret = _cmd->get(pn,pde_id);
    if (ret<0) {
-      msg("pde>","Unknown pde "+pde_name,
+      msg("pde>","Unknown pde "+pde_id,
           "Unknown pde name. Available pde's are:\n"
           "laplace, heat, wave, transport, linear-elasticity");
       _ret = 1;
       return 1;
    }
-   _pde->set(pde_name);
-   *ofh << "pde " << pde_name << endl;
+   _pde->set(pde_id);
+   *ofh << "pde " << pde_id << endl;
 
-   int nb_args = 0, nb=0, nb_fields=0;
-   bool field_ok = false;
-   vector<string> field_name;
+   int nb_args = 0, nb=0, nb_vectors=0;
+   bool vector_ok = false;
+   vector<string> vector_name;
    string str = "", str1 = "", ff="";
    _pde->set(_cmd);
-   _pde->log.field = true;
+   _pde->log.vect = true;
    if (_analysis_type==NONE)
       _analysis_type = STEADY_STATE;
    if (_data->nb_meshes==0) {
@@ -77,57 +78,64 @@ int rita::runPDE()
       return 1;
    }
    _pde->ls = OFELI::CG_SOLVER;
+   _pde->lsolv = "cg";
+   _pde->lprec = "dilu";
    _pde->prec = OFELI::DILU_PREC;
    string spd = "feP1";
-   const static vector<string> kw {"field","coef","axi","in$it","bc","bf","source","sf",
-                                   "traction","space","ls","nls","clear"};
+   const static vector<string> kw {"var$iable","vect$or","coef","axi","in$it","bc","bf","source","sf",
+                                   "traction","space","ls","nls","clear","name","save-every","save-file"};
    while (1) {
-      if ((nb_args=_cmd->readline("rita>pde> "))<0)
+      if ((nb_args=_cmd->readline(sPrompt+"pde> "))<0)
          continue;
       int key = _cmd->getKW(kw,_gkw);
+      if (key>=200) {
+         _data->setDataExt(key);
+         continue;
+      }
       switch (key) {
 
          case   0:
-            if (_cmd->setNbArg(1,"Give name of an associated field.")) {
-               msg("pde>field>","Missing name of an associated field.","",1);
+         case   1:
+            if (_cmd->setNbArg(1,"Give name of an associated variable/vector.")) {
+               msg("pde>vector>","Missing name of an associated vector.","",1);
                break;
             }
             if (!_cmd->get(str)) {
-               field_name.push_back(str);
-               nb_fields++;
-               field_ok = true;
-               *ofh << "  field " << str << endl;
+               vector_name.push_back(str);
+               nb_vectors++;
+               vector_ok = true;
+               *ofh << "  vector " << str << endl;
             }
             break;
 
-         case   1:
+         case   2:
             _pde->set_coef = true;
             _ret = _pde->setCoef();
             break;
 
-         case   2:
+         case   3:
             _pde->axi = true;
             break;
 
-         case   3:
+         case   4:
             _pde->getIn();
             break;
 
-         case   4:
+         case   5:
             _pde->getBC();
            break;
 
-         case   5:
          case   6:
+         case   7:
             _pde->getBF();
             break;
 
-         case   7:
          case   8:
+         case   9:
             _pde->getSF();
             break;
 
-         case   9:
+         case  10:
             if (_cmd->setNbArg(1,"Give space discretization method.")) {
                msg("pde>space>","Missing space discretization method.","",1);
                cout << "Available Commands\n";
@@ -146,7 +154,7 @@ int rita::runPDE()
             }
             break;
 
-         case  10:
+         case  11:
             if (_cmd->setNbArg(1,"Linear solver and optional preconditioner to be supplied.",1)) {
                msg("pde>ls>","Missing linear solver data.","",1);
                break;
@@ -161,6 +169,8 @@ int rita::runPDE()
             if (!_ret) {
                *ofh << "  ls " << str << " " << str1 << endl;
                if (!set_ls(str,str1)) {
+                  _pde->lsolv = str;
+                  _pde->lprec = str1;
                   _pde->ls = Ls[str];
                   _pde->prec = Prec[str1];
                }
@@ -169,7 +179,7 @@ int rita::runPDE()
                _pde->log.ls = true;
             break;
 
-         case  11:
+         case  12:
             if (_cmd->setNbArg(1,"Nonlinear solver to be supplied.",1)) {
                msg("pde>nls>","Missing nonlinear solver data.","",1);
                break;
@@ -185,25 +195,45 @@ int rita::runPDE()
             }
             break;
 
-         case  12:
+         case  13:
             cout << "PDE removed from model." << endl;
             *ofh << "  clear" << endl;
             _ret = 10;
             return _ret;
 
+         case  14:
+            if (!_cmd->get(name))
+               *ofh << "  name " << name << endl;
+            break;
+
+         case  15:
+            if (!_cmd->get(every)) {
+               *ofh << "  save-every " << every << endl;
+            }
+            break;
+
+         case  16:
+            if (!_cmd->get(file)) {
+               *ofh << "  save-file " << file << endl;
+            }
+            break;
+
          case 100:
          case 101:
             cout << "\nAvailable Commands:\n";
-            cout << "field:  Field name of an unknown of the equation\n";
-            cout << "coef:   PDE coefficients\n";
-            cout << "axi:    Choose axisymmetric geometry\n";
-            cout << "init:   Set initial condition or guess for pde\n";
-            cout << "bc:     Set boundary conditions\n";
-            cout << "source: Set sources or body forces\n";
-            cout << "sf:     Set side (boundary) forces\n";
-            cout << "space:  Space discretization method\n";
-            cout << "ls:     Set linear system solver\n";
-            cout << "nls:    Set nonlinear system iteration procedure\n";
+            cout << "vector:     Vector name of an unknown of the equation\n";
+            cout << "coef:       PDE coefficients\n";
+            cout << "axi:        Choose axisymmetric geometry\n";
+            cout << "init:       Set initial condition or guess for pde\n";
+            cout << "bc:         Set boundary conditions\n";
+            cout << "source:     Set sources or body forces\n";
+            cout << "sf:         Set side (boundary) forces\n";
+            cout << "space:      Space discretization method\n";
+            cout << "ls:         Set linear system solver\n";
+            cout << "nls:        Set nonlinear system iteration procedure\n";
+            cout << "name:       Set name of the defined PDE\n";
+            cout << "save-every: Save PDE solution every n time steps\n";
+            cout << "save-file:  Save file (if available) in given file\n";
             cout << "clear:  Remove pde from model\n" << endl;
             break;
 
@@ -217,56 +247,40 @@ int rita::runPDE()
 
          case 104:
          case 105:
-            setParam();
-            break;
-
-         case 106:
-            if (_cmd->setNbArg(1,"Data name to be given.",1)) {
-               msg("print>","Missing data name.","",1);
-               break;
-            }
-            if (!_cmd->get(fn))
-               _data->print(fn);
-            break;
-
-         case 107:
-            _data->Summary();
-            break;
-
-         case 108:
-         case 109:
            _cmd->setNbArg(0);
             if (_ret) {
                msg("pde>end>","No PDE data created.");
                *ofh << "end" << endl;
             }
-            if (!field_ok) {
-               msg("pde>end>","No field(s) defined for PDE.");
+            if (!vector_ok) {
+               msg("pde>end>","No vector(s) defined for PDE.");
                break;
             }
             _pde->setSpD(spd);
             _pde->setEq();
             *ofh << "  space " << spd << endl;
-            if (nb_fields>_pde->nb_fields) {
-               msg("pde>end>","Too many fields for defined PDE.");
+            if (nb_vectors>_pde->nb_vectors) {
+               msg("pde>end>","Too many vectors for defined PDE.");
                break;
             }
-            if (nb_fields<_pde->nb_fields) {
-               msg("pde>end>","Not enough fields for defined PDE.");
+            if (nb_vectors<_pde->nb_vectors) {
+               msg("pde>end>","Not enough vectors for defined PDE.");
                break;
             }
             ff = spd.substr(0,2);
-            _data->addPDE(_pde);
-            for (int i=0; i<nb_fields; ++i) {
+            if (name=="")
+               name = "PDE-" + to_string(_data->theMesh.size()-1);
+            _data->addPDE(_pde,name);
+            for (int i=0; i<nb_vectors; ++i) {
                if (ff=="fd")
-                  _data->addGridField(field_name[i],_pde->fd[i].nb_dof);
+                  _data->addGridVector(vector_name[i],_pde->fd[i].nb_dof);
                else if (ff=="fe" || ff=="fv" || ff=="dg")
-                  _data->addMeshField(field_name[i],data::DataSize::NODES,_pde->fd[i].nb_dof);
-               _data->FieldEquation.push_back(_data->getNbEq());
-               _pde->fd[i].fn = field_name[i];
-               _pde->fd[i].field = _data->iField;
+                  _data->addMeshVector(vector_name[i],data::DataSize::NODES,_pde->fd[i].nb_dof);
+               _data->VectorEquation.push_back(_data->getNbEq());
+               _pde->fd[i].fn = vector_name[i];
+               _pde->fd[i].vect = _data->iVector;
             }
-            _pde->log.field = false;
+            _pde->log.vect = false;
             _pde->b.setSize(_data->theMesh[_data->iMesh]->getNbEq());
             if (_pde->set_in)
                _pde->setIn();
@@ -276,16 +290,9 @@ int rita::runPDE()
                _pde->setSF();
             if (_pde->set_bf)
                _pde->setBF();
-            if (_verb) {
-               cout << "Summary of PDE settings:" << endl;
-               cout << "   PDE name: " << _pde->eq << endl;
-               cout << "   PDE unknown field(s): ";
-               for (int i=0; i<_pde->nb_fields-1; ++i)
-                  cout << _pde->fd[i].fn << ", ";
-               cout << _pde->fd[nb_fields-1].fn << endl;
-               cout << "   PDE space discretization: " << spd << endl;
-               cout << "   PDE linear solver: " << rLs[_pde->ls] << endl;
-            }
+            _pde->every = every;
+            _pde->file = file;
+            _pde->name = name;
             _ret = 0;
             *ofh << "  end" << endl;
             _pde->log.pde = false;
@@ -293,8 +300,7 @@ int rita::runPDE()
             return 0;
 
          default:
-            msg("pde>","Unknown Command "+_cmd->token(),
-                "Available commands: field, coef, axi, in, bc, bf, sf, space, ls, nls, clear");
+            _ret = _calc->run();
             break;
       }
    }
