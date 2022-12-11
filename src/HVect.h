@@ -94,7 +94,7 @@ class HVect
       for (int n=0; n<nt; n+=e) {
          Vect<double> &v = vs[n];
          ff << ts[n];
-         for (int i=0; i<v.size(); ++i)
+         for (int i=0; i<int(v.size()); ++i)
             ff << "  " << v[i];
          ff << endl;
       }
@@ -111,7 +111,7 @@ class HVect
       if (v.WithMesh()==false)
          return 1;
       Mesh &ms = v.getMesh();
-      int nb_dof = v.getNbDOF();
+      int nb_dof = int(v.getNbDOF());
 
       ff << "View \"" << v.getName() << "\" {" << endl;
       switch (ms.getDim()) {
@@ -220,7 +220,7 @@ class HVect
       Vect<double> &v = *get(1);
       if (v.WithMesh()==false)
          return 1;
-      int nb_dof = v.getNbDOF();
+      int nb_dof = int(v.getNbDOF());
       Mesh &ms = v.getMesh();
 
       int sz=0;
@@ -282,7 +282,7 @@ class HVect
       Vect<double> &v = *get(1);
       if (v.WithMesh()==false)
          return 1;
-      int nb_dof = v.getNbDOF();
+      int nb_dof = int(v.getNbDOF());
       Mesh &ms = v.getMesh();
 
       ofstream ff(file.c_str());
@@ -317,7 +317,7 @@ class HVect
          ff << endl;
          node_loop(&ms) {
             if (count==0)
-               for (int i=1; i<=ms.getDim(); i++)
+	      for (int i=1; i<=int(ms.getDim()); i++)
                   ff << "  " << The_node.getCoord(i);
             for (int j=1; j<=nb_dof; j++)
                ff << "  " << v(node_label,j);
@@ -325,7 +325,7 @@ class HVect
          }
          if (count==0) {
             element_loop(&ms) {
-               for (int i=1; i<=The_element.getNbNodes(); ++i)
+	      for (int i=1; i<=int(The_element.getNbNodes()); ++i)
                   ff << setw(10) << The_element(i)->n();
                ff << endl;
             }

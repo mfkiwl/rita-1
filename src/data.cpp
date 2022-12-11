@@ -1969,7 +1969,7 @@ int data::saveGmsh(const string &file, const Vect<double>& v)
    if (v.WithMesh()==false)
       return 1;
    Mesh &ms = v.getMesh();
-   int nb_dof = v.getNbDOF();
+   int nb_dof = int(v.getNbDOF());
    ff << "View \"" << v.getName() << "\" {" << endl;
    switch (ms.getDim()) {
 
@@ -1990,7 +1990,7 @@ int data::saveGmsh(const string &file, const Vect<double>& v)
                ff << 'S';
             else
                ff << 'V';
-            int nb_en=The_element.getNbNodes();
+            int nb_en=int(The_element.getNbNodes());
             if (nb_en==3)
                ff << "T(";
             else if (nb_en==4)
@@ -2056,7 +2056,7 @@ int data::saveVTK(const string &file, const Vect<double>& v)
 
    if (v.WithMesh()==false)
       return 1;
-   int nb_dof = v.getNbDOF();
+   int nb_dof = int(v.getNbDOF());
    Mesh &ms = v.getMesh();
    int sz=0;
    element_loop(&ms)
@@ -2110,7 +2110,7 @@ int data::saveTecplot(const string& file, const Vect<double>& v)
                             {TETRAHEDRON,"TETRAHEDRON"},{HEXAHEDRON,"HEXAHEDRON"},{PENTAHEDRON,"HEXAHEDRON"}};
    if (v.WithMesh()==false)
       return 1;
-   int nb_dof = v.getNbDOF();
+   int nb_dof = int(v.getNbDOF());
    Mesh &ms = v.getMesh();
    ofstream ff(file.c_str());
    ff.setf(ios::right|ios::scientific);
@@ -2134,14 +2134,14 @@ int data::saveTecplot(const string& file, const Vect<double>& v)
    ff << "FECONNECT)";
    ff << endl;
    node_loop(&ms) {
-      for (int i=1; i<=ms.getDim(); i++)
+     for (int i=1; i<=int(ms.getDim()); i++)
          ff << "  " << The_node.getCoord(i);
          for (int j=0; j<nb_dof; j++)
              ff << "  " << v[nb_dof*(node_label-1)+j];
          ff << endl;
    }
    element_loop(&ms) {
-      for (int i=1; i<=The_element.getNbNodes(); ++i)
+     for (int i=1; i<=int(The_element.getNbNodes()); ++i)
          ff << setw(10) << The_element(i)->n();
       ff << endl;
    }

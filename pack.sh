@@ -12,30 +12,30 @@ PREFIX="/usr/local"
 SYSTEM=$2
 RELEASE=rita-${RELEASE}
 
-if [${SYSTEM} == ""]; then
+if [${SYSTEM} -eq ""]; then
    tar --exclude='./build' --exclude='.DS_Store' --exclude='.git' --exclude='.gitattributes' --exclude='.vscode' -czf rita.tar.gz rita/
    mv rita ${RELEASE}
    tar --exclude='./build' --exclude='.DS_Store' --exclude='.git' --exclude='.gitattributes' --exclude='.vscode' --exclude='./pack.sh' --exclude='install.sh' -czf ${RELEASE}-src.tar.gz ${RELEASE}
    mv ${RELEASE} rita
 fi
 
-if [${SYSTEM} != "MacOSX"] &&
-   [${SYSTEM} != "Linux64"] &&
-   [${SYSTEM} != "Win64"]; then
+if [${SYSTEM} -ne "MacOSX"] &&
+   [${SYSTEM} -ne "Linux64"] &&
+   [${SYSTEM} -ne "Win64"]; then
      echo "Error: Unavailable Platform $MACHINE"
    exit
 fi
 
 echo "Preparing release $RELEASE..."
-echo "--------------------------"
+echo "-----------------------------"
 
 case "$SYSTEM" in
 
     MacOSX)
         echo "Creating Compiled Package ..."
-        mkdir -p ${RELEASE}-${SYSTEM}
-        cp rita/install.sh ${RELEASE}-${SYSTEM}/.
-        cd ${RELEASE}-${SYSTEM}
+        mkdir -p ${RELEASE}
+        cp rita/install.sh ${RELEASE}/.
+        cd ${RELEASE}
         mkdir -p bin
         cp ${PREFIX}/bin/rita bin/rita
         cp ${PREFIX}/bin/gmsh bin/gmsh
@@ -47,15 +47,15 @@ case "$SYSTEM" in
         mkdir -p lib
         cp -a ${PREFIX}/lib/libgmsh* lib/
 	cd ../
-        tar czf ${RELEASE}-${SYSTEM}.tar.gz ${RELEASE}-${SYSTEM}
-	/bin/rm -rf ${RELEASE}-${SYSTEM}
+        tar czf ${RELEASE}-${SYSTEM}.tar.gz ${RELEASE}
+	/bin/rm -rf ${RELEASE}
 	;;
 
     Linux64)
         echo "Creating Compiled Package ..."
-        mkdir -p ${RELEASE}-${SYSTEM}
-        cp rita/install.sh ${RELEASE}-${SYSTEM}/.
-        cd ${RELEASE}-${SYSTEM}
+        mkdir -p ${RELEASE}
+        cp rita/install.sh ${RELEASE}/.
+        cd ${RELEASE}
         mkdir -p bin
         cp ${PREFIX}/bin/rita bin/rita
         cp ${PREFIX}/bin/gmsh bin/gmsh
@@ -67,8 +67,8 @@ case "$SYSTEM" in
         mkdir -p lib
         cp -a ${PREFIX}/lib/libgmsh* lib/
 	cd ../
-        tar czf ${RELEASE}-${SYSTEM}.tar.gz ${RELEASE}-${SYSTEM}
-	/bin/rm -rf ${RELEASE}-${SYSTEM}
+        tar czf ${RELEASE}-${SYSTEM}.tar.gz ${RELEASE}
+	/bin/rm -rf ${RELEASE}
         ;;
 
     Win64)
